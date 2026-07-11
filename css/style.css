@@ -1,0 +1,770 @@
+/* ============================================
+   PATITAS EL REY - Variables y estilos base
+   ============================================ */
+:root {
+    --brand-cafe: #6f4e37;      /* café principal */
+    --brand-cafe-dark: #4a3323; /* café oscuro */
+    --brand-verde: #7a9d54;     /* verde natural */
+    --brand-beige: #f5efe6;     /* beige claro */
+    --brand-beige-2: #ede0cf;   /* beige medio */
+    --brand-blanco: #ffffff;
+}
+
+* {
+    font-family: 'Poppins', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Fredoka', sans-serif;
+}
+
+body {
+    background-color: var(--brand-blanco);
+    color: #3b2f2a;
+    padding-top: 76px; /* espacio para navbar fija */
+}
+
+/* ===== Utilidades de color de marca ===== */
+.text-brand { color: var(--brand-cafe); }
+.text-brand-dark { color: var(--brand-cafe-dark); }
+.bg-brand-light { background-color: var(--brand-beige); }
+
+.btn-brand {
+    background-color: var(--brand-cafe);
+    border-color: var(--brand-cafe);
+    color: #fff;
+    border-radius: 50px;
+    padding: 10px 24px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+}
+.btn-brand:hover {
+    background-color: var(--brand-cafe-dark);
+    border-color: var(--brand-cafe-dark);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.btn-outline-brand {
+    border: 2px solid var(--brand-cafe);
+    color: var(--brand-cafe);
+    border-radius: 50px;
+    padding: 10px 24px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+}
+.btn-outline-brand:hover {
+    background-color: var(--brand-cafe);
+    color: #fff;
+}
+
+/* ===== Navbar ===== */
+.navbar-brand {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 1.5rem;
+    color: var(--brand-cafe-dark);
+}
+.nav-link {
+    font-weight: 500;
+    color: #4a3323 !important;
+}
+.nav-link.active,
+.nav-link:hover {
+    color: var(--brand-verde) !important;
+}
+
+/* ===== Hero ===== */
+.hero {
+    background: linear-gradient(135deg, var(--brand-beige) 0%, var(--brand-beige-2) 100%);
+    min-height: 90vh;
+    padding: 60px 0;
+}
+.hero-img {
+    max-height: 450px;
+    filter: drop-shadow(0 20px 25px rgba(0,0,0,0.15));
+}
+
+/* ===== Beneficios ===== */
+.beneficio-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 30px 15px;
+    height: 100%;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    transition: transform 0.25s ease;
+}
+.beneficio-card:hover {
+    transform: translateY(-8px);
+}
+.beneficio-card i {
+    font-size: 2.5rem;
+    color: var(--brand-verde);
+}
+
+/* ===== Tarjetas de producto (catálogo) ===== */
+.producto-card {
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.07);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    height: 100%;
+}
+.producto-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.12);
+}
+.producto-card .producto-img-wrap {
+    height: 240px;
+    background-color: var(--brand-beige);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 16px;
+}
+.producto-card img {
+    max-height: 100%;
+    max-width: 100%;
+    width: auto;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+.producto-card:hover img {
+    transform: scale(1.05);
+}
+.producto-precio {
+    color: var(--brand-cafe);
+    font-weight: 700;
+    font-size: 1.3rem;
+}
+
+/* ===== Footer ===== */
+.footer-brand {
+    background-color: var(--brand-cafe-dark);
+}
+.footer-links a {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    line-height: 2;
+    display: block;
+}
+.footer-links a:hover {
+    color: var(--brand-verde);
+}
+.social-icons a {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-right: 8px;
+    transition: background 0.25s ease;
+}
+.social-icons a:hover {
+    background: var(--brand-verde);
+}
+
+/* ===== Botón flotante WhatsApp ===== */
+.whatsapp-float {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background-color: #25D366;
+    color: #fff;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    z-index: 999;
+    transition: transform 0.25s ease;
+}
+.whatsapp-float:hover {
+    transform: scale(1.1);
+    color: #fff;
+}
+
+/* ===== Accordion FAQ (ajuste de color) ===== */
+.accordion-button:not(.collapsed) {
+    background-color: var(--brand-beige);
+    color: var(--brand-cafe-dark);
+}
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: var(--brand-verde);
+}
+
+/* ===== Header de páginas internas ===== */
+.page-header {
+    background: linear-gradient(135deg, var(--brand-beige) 0%, var(--brand-beige-2) 100%);
+    padding: 100px 0 60px;
+}
+
+/* ===== Proceso (círculos numerados) ===== */
+.proceso-numero {
+    width: 60px;
+    height: 60px;
+    background-color: var(--brand-cafe);
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+/* ===== CTA (llamado a la acción) ===== */
+.cta-section {
+    background: linear-gradient(135deg, var(--brand-verde) 0%, #5c7a3f 100%);
+}
+
+/* ===== Toast de notificación al agregar al carrito ===== */
+.toast-carrito-custom {
+    position: fixed;
+    top: 90px;
+    right: 25px;
+    background-color: var(--brand-verde);
+    color: #fff;
+    padding: 14px 22px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    font-weight: 500;
+    z-index: 1050;
+    opacity: 0;
+    transform: translateX(30px);
+    transition: all 0.3s ease;
+}
+.toast-carrito-custom.mostrar {
+    opacity: 1;
+    transform: translateX(0);
+}
+.toast-carrito-custom i {
+    margin-right: 6px;
+}
+
+/* ===== Items del carrito ===== */
+.carrito-item-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+/* ===== Resumen del carrito (sticky en desktop) ===== */
+.resumen-carrito {
+    position: sticky;
+    top: 100px;
+}
+
+/* ===== Info de contacto ===== */
+.contacto-info-item i {
+    font-size: 1.5rem;
+    color: var(--brand-verde);
+    min-width: 30px;
+}
+
+/* ===== Auth (login / registro) ===== */
+.auth-section {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, var(--brand-beige) 0%, var(--brand-beige-2) 100%);
+}
+
+/* Requisitos de contraseña */
+.requisitos-password {
+    background-color: var(--brand-beige);
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+.req-item {
+    color: #8a7b6c;
+    transition: color 0.2s ease;
+}
+.req-item i {
+    margin-right: 5px;
+}
+.req-item.req-cumplido {
+    color: var(--brand-verde);
+    font-weight: 600;
+}
+/* ===== Hero mejorado: formas decorativas ===== */
+.hero-shape {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.5;
+    z-index: 0;
+}
+.hero-shape-1 {
+    width: 350px;
+    height: 350px;
+    background: var(--brand-verde);
+    opacity: 0.08;
+    top: -100px;
+    right: -100px;
+}
+.hero-shape-2 {
+    width: 250px;
+    height: 250px;
+    background: var(--brand-cafe);
+    opacity: 0.06;
+    bottom: -80px;
+    left: -80px;
+}
+.hero-paw {
+    position: absolute;
+    color: var(--brand-cafe);
+    opacity: 0.08;
+    z-index: 0;
+}
+.hero-paw-1 { font-size: 3.5rem; top: 15%; right: 8%; transform: rotate(-20deg); }
+.hero-paw-2 { font-size: 2.5rem; bottom: 20%; right: 20%; transform: rotate(15deg); }
+.hero-paw-3 { font-size: 2rem; top: 60%; left: 5%; transform: rotate(30deg); }
+
+/* Subrayado decorativo en "amará" */
+.text-underline-accent {
+    position: relative;
+    display: inline-block;
+}
+.text-underline-accent::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 2px;
+    width: 100%;
+    height: 10px;
+    background: var(--brand-verde);
+    opacity: 0.25;
+    z-index: -1;
+    border-radius: 10px;
+}
+
+/* Barra de confianza */
+.hero-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #5c4a3a;
+}
+.hero-trust-item i {
+    color: var(--brand-verde);
+    font-size: 1.2rem;
+}
+
+/* Animación flotante en la imagen */
+.hero-img-float {
+    animation: flotar 4s ease-in-out infinite;
+}
+@keyframes flotar {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+}
+
+/* Tarjeta flotante de calificación */
+.hero-floating-card {
+    position: absolute;
+    top: 15%;
+    left: 5%;
+    background: #fff;
+    padding: 14px 20px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    animation: flotar-card 3.5s ease-in-out infinite;
+    z-index: 2;
+}
+@keyframes flotar-card {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(10px); }
+}
+
+@media (max-width: 991px) {
+    .hero-floating-card { display: none; }
+    .hero-paw { display: none; }
+}
+/* aviso de "te falta poco para envío gratis" */
+.aviso-envio-gratis {
+    background-color: var(--brand-beige);
+    color: var(--brand-cafe-dark);
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+/* icono de check en el modal de compra exitosa */
+.icono-exito {
+    width: 80px;
+    height: 80px;
+    background-color: var(--brand-verde);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin: 0 auto;
+}
+
+/* menú de pestañas del perfil */
+.perfil-nav .nav-link {
+    color: #4a3323;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    font-weight: 500;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+.perfil-nav .nav-link i {
+    font-size: 1.1rem;
+}
+.perfil-nav .nav-link:hover {
+    background-color: var(--brand-beige);
+}
+.perfil-nav .nav-link.active {
+    background-color: var(--brand-cafe);
+    color: #fff;
+}
+
+/* tarjetas de direcciones guardadas */
+.direccion-card {
+    border: 1px solid #eee;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.direccion-etiqueta {
+    background-color: var(--brand-beige);
+    color: var(--brand-cafe-dark);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 50px;
+    display: inline-block;
+    margin-bottom: 6px;
+}
+
+/* tarjetas de "Mis pedidos" en el perfil */
+.pedido-card {
+    border: 1px solid #eee;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+}
+.badge-pedido {
+    background-color: var(--brand-verde);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 50px;
+}
+
+/* ===== Logo con más presencia ===== */
+.logo-icono {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, var(--brand-cafe), var(--brand-cafe-dark));
+    color: #fff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+.logo-texto {
+    line-height: 1.2;
+}
+.logo-eslogan {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: #8a7b6c;
+    letter-spacing: 0.3px;
+}
+
+/* ===== Eslogan del hero ===== */
+.hero-eslogan {
+    color: var(--brand-verde);
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0;
+}
+
+/* ===== Badge "100% Natural" con más presencia ===== */
+.badge-natural {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #fff;
+    color: var(--brand-cafe-dark);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 8px 18px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid var(--brand-beige-2);
+}
+.badge-natural i {
+    color: var(--brand-verde);
+}
+
+
+/* ===== Panel de administrador (nuevo, no toca estilos del sitio público) ===== */
+.admin-body {
+    background-color: #f4f1ec;
+}
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+}
+.admin-sidebar {
+    width: 260px;
+    background-color: var(--brand-cafe-dark);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 18px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+.admin-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 30px;
+    padding: 0 6px;
+}
+.admin-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-grow: 1;
+}
+.admin-nav-link {
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    padding: 12px 14px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    transition: background 0.2s ease;
+}
+.admin-nav-link:hover:not(.disabled) {
+    background-color: rgba(255,255,255,0.08);
+    color: #fff;
+}
+.admin-nav-link.active {
+    background-color: var(--brand-verde);
+    color: #fff;
+    font-weight: 600;
+}
+.admin-nav-link.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.badge-proximamente {
+    margin-left: auto;
+    background: rgba(255,255,255,0.15);
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 50px;
+}
+.admin-sidebar-footer {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.admin-contenido {
+    flex-grow: 1;
+    padding: 40px;
+}
+.badge-rol-admin {
+    background-color: var(--brand-beige);
+    color: var(--brand-cafe-dark);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 8px 16px;
+    border-radius: 50px;
+}
+.admin-metrica-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    height: 100%;
+}
+.admin-metrica-card i {
+    font-size: 1.6rem;
+    color: var(--brand-verde);
+}
+.admin-metrica-valor {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--brand-cafe-dark);
+    margin: 10px 0 2px;
+}
+.admin-metrica-texto {
+    font-size: 1.1rem;
+}
+.admin-metrica-label {
+    color: #8a7b6c;
+    font-size: 0.85rem;
+    margin-bottom: 0;
+}
+.admin-aviso {
+    background-color: #fff;
+    border-left: 4px solid var(--brand-verde);
+    padding: 16px 20px;
+    border-radius: 10px;
+    color: #5c4a3a;
+    font-size: 0.9rem;
+}
+.admin-aviso i {
+    color: var(--brand-verde);
+    margin-right: 6px;
+}
+
+/* Tablets: el sidebar se angosta un poco pero se mantiene lateral */
+@media (max-width: 991px) {
+    .admin-sidebar {
+        width: 220px;
+    }
+    .admin-contenido {
+        padding: 28px 20px;
+    }
+}
+
+/* Celulares: el sidebar pasa de lateral a bloque apilado arriba */
+@media (max-width: 768px) {
+    .admin-layout {
+        flex-direction: column;
+    }
+    .admin-sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        top: 0;
+    }
+    .admin-metrica-valor {
+        font-size: 1.4rem;
+    }
+}
+
+/* tarjetas de pedidos en el panel de admin */
+.pedido-admin-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+/* badges de estado del pedido */
+.badge-estado {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 50px;
+}
+.badge-estado-pendiente {
+    background-color: #fdf1d8;
+    color: #9a6b1e;
+}
+.badge-estado-enviado {
+    background-color: #dce8f7;
+    color: #2d5f9a;
+}
+.badge-estado-entregado {
+    background-color: #dcf0dc;
+    color: #2d7a3f;
+}
+
+/* ===== Checkout: opciones de dirección guardada ===== */
+.checkout-direccion-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease;
+}
+.checkout-direccion-item:hover {
+    border-color: var(--brand-verde);
+}
+.checkout-direccion-item input {
+    flex-shrink: 0;
+}
+
+/* ===== Checkout: opciones de método de pago ===== */
+.metodo-pago-opciones {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.metodo-pago-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+.metodo-pago-item:hover {
+    border-color: var(--brand-verde);
+}
+.metodo-pago-item:has(input:checked) {
+    border-color: var(--brand-cafe);
+    background-color: var(--brand-beige);
+}
+.metodo-pago-item i {
+    color: var(--brand-verde);
+    font-size: 1.1rem;
+}
+
+/* datos extra según el método (transferencia / tarjeta) */
+.datos-pago-extra {
+    background-color: var(--brand-beige);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-top: 6px;
+}
+
+/* resumen final en el modal de compra exitosa */
+.checkout-resumen-final {
+    background-color: var(--brand-beige);
+    border-radius: 12px;
+    padding: 14px 18px;
+}

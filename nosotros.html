@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nosotros | Alitas El Rey</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="img/favicon/favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="index.html">
+    <span class="logo-icono">
+        <i class="bi bi-paw-fill"></i>
+    </span>
+    <span class="logo-texto">
+        Patitas <span class="text-brand">El Rey</span>
+        <small class="d-block logo-eslogan">Premios 100% naturales</small>
+    </span>
+</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-3">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="nosotros.html">Nosotros</a></li>
+                    <li class="nav-item"><a class="nav-link" href="productos.html">Productos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contacto.html">Contacto</a></li>
+                    <li class="nav-item">
+                        <a class="btn btn-brand position-relative" href="carrito.html">
+                            <i class="bi bi-cart3"></i> Carrito
+                            <span id="contador-carrito" class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HEADER DE PÁGINA ===== -->
+    <header class="page-header text-center">
+        <div class="container">
+            <span class="badge bg-brand-light text-brand-dark mb-2">Nuestra historia</span>
+            <h1 class="fw-bold">Conoce Patitas El Rey</h1>
+            <p class="text-muted lead">Pasión por el bienestar de tu mejor amigo</p>
+        </div>
+    </header>
+
+    <!-- ===== HISTORIA ===== -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6">
+                    <img src="img/nosotros-historia.jpg" alt="Historia de Patitas El Rey" class="img-fluid rounded-4 shadow">
+                </div>
+                <div class="col-lg-6">
+                    <span class="text-brand fw-semibold">¿QUIÉNES SOMOS?</span>
+                    <h2 class="fw-bold mb-3">Una empresa hecha por amor a los perros</h2>
+                    <p class="text-muted">
+                        Patitas El Rey nació de la necesidad de ofrecerle a nuestras propias mascotas un premio
+                        rico, saludable y libre de químicos. Empezamos deshidratando alitas de pollo de forma
+                        artesanal en casa, y hoy en día llevamos ese mismo cuidado a cientos de familias caninas.
+                    </p>
+                    <p class="text-muted">
+                        Cada lote de alitas pasa por un proceso cuidadoso de deshidratado a baja temperatura,
+                        que conserva los nutrientes naturales del pollo sin necesidad de conservadores artificiales.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== MISIÓN, VISIÓN, VALORES ===== -->
+    <section class="py-5 bg-brand-light">
+        <div class="container">
+            <div class="row g-4 text-center">
+                <div class="col-md-4">
+                    <div class="beneficio-card">
+                        <i class="bi bi-bullseye"></i>
+                        <h5 class="mt-3">Misión</h5>
+                        <p class="text-muted small">Ofrecer premios naturales y saludables que fortalezcan el vínculo entre las personas y sus mascotas.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="beneficio-card">
+                        <i class="bi bi-eye"></i>
+                        <h5 class="mt-3">Visión</h5>
+                        <p class="text-muted small">Ser la marca líder en premios naturales para perros en México, reconocida por su calidad y confianza.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="beneficio-card">
+                        <i class="bi bi-heart"></i>
+                        <h5 class="mt-3">Valores</h5>
+                        <p class="text-muted small">Amor por los animales, calidad artesanal, transparencia y compromiso con la salud canina.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESO ===== -->
+    <section class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <span class="text-brand fw-semibold">NUESTRO PROCESO</span>
+                <h2 class="fw-bold">Del pollo fresco a tu casa</h2>
+            </div>
+            <div class="row g-4 text-center">
+                <div class="col-md-3 col-6">
+                    <div class="proceso-numero">1</div>
+                    <h6 class="mt-3">Selección</h6>
+                    <p class="text-muted small">Escogemos alitas de pollo fresco y de calidad</p>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="proceso-numero">2</div>
+                    <h6 class="mt-3">Limpieza</h6>
+                    <p class="text-muted small">Lavado e higiene bajo estrictos controles</p>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="proceso-numero">3</div>
+                    <h6 class="mt-3">Deshidratado</h6>
+                    <p class="text-muted small">Proceso a baja temperatura sin químicos</p>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="proceso-numero">4</div>
+                    <h6 class="mt-3">Empaque</h6>
+                    <p class="text-muted small">Empacado hermético para conservar frescura</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CTA ===== -->
+    <section class="py-5 text-center cta-section">
+        <div class="container">
+            <h2 class="fw-bold text-white mb-3">¿Listo para consentir a tu perro?</h2>
+            <p class="text-white-50 mb-4">Descubre nuestro catálogo de premios naturales</p>
+            <a href="productos.html" class="btn btn-light btn-lg fw-semibold">Ver productos</a>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer-brand pt-5 pb-4">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <h5 class="fw-bold text-white"><i class="bi bi-egg-fried"></i> Patitas El Rey</h5>
+                    <p class="text-white-50">Alitas de pollo deshidratadas 100% naturales para el bienestar de tu mejor amigo.</p>
+                    <div class="social-icons mt-3">
+                        <a href="#" target="_blank"><i class="bi bi-facebook"></i></a>
+                        <a href="#" target="_blank"><i class="bi bi-instagram"></i></a>
+                        <a href="#" target="_blank"><i class="bi bi-tiktok"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <h6 class="text-white fw-semibold mb-3">Navegación</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="index.html">Inicio</a></li>
+                        <li><a href="nosotros.html">Nosotros</a></li>
+                        <li><a href="productos.html">Productos</a></li>
+                        <li><a href="contacto.html">Contacto</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <h6 class="text-white fw-semibold mb-3">Contacto</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><i class="bi bi-whatsapp"></i> +52 000 000 0000</li>
+                        <li><i class="bi bi-envelope"></i> contacto@patitaselrey.com</li>
+                        <li><i class="bi bi-geo-alt"></i> Puebla, México</li>
+                    </ul>
+                </div>
+                <div class="col-lg-3">
+                    <h6 class="text-white fw-semibold mb-3">Horario</h6>
+                    <p class="text-white-50 mb-1">Lun - Vie: 9:00 - 18:00</p>
+                    <p class="text-white-50">Sáb: 9:00 - 14:00</p>
+                </div>
+            </div>
+            <hr class="border-secondary mt-4">
+            <p class="text-center text-white-50 mb-0 small">&copy; 2026 Patitas El Rey. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <a href="https://wa.me/520000000000" class="whatsapp-float" target="_blank" aria-label="Contactar por WhatsApp">
+        <i class="bi bi-whatsapp"></i>
+    </a>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/carrito.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>

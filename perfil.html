@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi perfil | Patitas El Rey</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="img/favicon/favicon.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="index.html">
+    <span class="logo-icono">
+        <i class="bi bi-paw-fill"></i>
+    </span>
+    <span class="logo-texto">
+        Patitas <span class="text-brand">El Rey</span>
+        <small class="d-block logo-eslogan">Premios 100% naturales</small>
+    </span>
+</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-3">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="nosotros.html">Nosotros</a></li>
+                    <li class="nav-item"><a class="nav-link" href="productos.html">Productos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contacto.html">Contacto</a></li>
+                    <li id="nav-auth"></li>
+                    <li class="nav-item">
+                        <a class="btn btn-brand position-relative" href="carrito.html">
+                            <i class="bi bi-cart3"></i> Carrito
+                            <span id="contador-carrito" class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HEADER DE PÁGINA ===== -->
+    <header class="page-header text-center">
+        <div class="container">
+            <span class="badge bg-brand-light text-brand-dark mb-2">Área privada</span>
+            <h1 class="fw-bold">Mi perfil</h1>
+            <p class="text-muted lead">Administra tu información y seguridad de cuenta</p>
+        </div>
+    </header>
+
+    <section class="py-5">
+        <div class="container">
+            <div class="row g-4">
+
+                <!-- ===== TARJETA RESUMEN + MENÚ DE PESTAÑAS ===== -->
+                <div class="col-lg-3">
+                    <div class="card border-0 shadow-sm p-4 text-center mb-4">
+                        <i class="bi bi-person-circle display-1 text-brand"></i>
+                        <h5 class="fw-bold mt-3 mb-0" id="perfil-nombre">—</h5>
+                        <p class="text-muted small" id="perfil-email">—</p>
+                        <hr>
+                        <p class="text-muted small mb-1"><i class="bi bi-calendar-check"></i> Cliente desde</p>
+                        <p class="fw-semibold" id="perfil-fecha">—</p>
+                        <button class="btn btn-outline-danger mt-2" onclick="cerrarSesion()">
+                            <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+                        </button>
+                    </div>
+
+                    <div class="nav flex-column nav-pills perfil-nav" id="perfil-tabs" role="tablist" aria-orientation="vertical">
+                        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-datos" type="button" role="tab">
+                            <i class="bi bi-person-badge"></i> Mis datos
+                        </button>
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-password" type="button" role="tab">
+                            <i class="bi bi-key"></i> Cambiar contraseña
+                        </button>
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-direcciones" type="button" role="tab">
+                            <i class="bi bi-geo-alt"></i> Direcciones
+                        </button>
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-pedidos" type="button" role="tab">
+                            <i class="bi bi-bag-heart"></i> Mis pedidos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ===== CONTENIDO DE PESTAÑAS ===== -->
+                <div class="col-lg-9">
+                    <div class="tab-content">
+
+                        <!-- MIS DATOS -->
+                        <div class="tab-pane fade show active" id="tab-datos" role="tabpanel">
+                            <div class="card border-0 shadow-sm p-4 p-md-5">
+                                <h5 class="fw-bold mb-4"><i class="bi bi-person-badge text-brand"></i> Mis datos</h5>
+                                <div id="alerta-datos-exito" class="alert alert-success d-none">
+                                    <i class="bi bi-check-circle-fill"></i> Tus datos se actualizaron correctamente.
+                                </div>
+                                <form id="form-datos" novalidate>
+                                    <div class="mb-3">
+                                        <label for="datos-nombre" class="form-label">Nombre completo</label>
+                                        <input type="text" class="form-control" id="datos-nombre">
+                                        <div class="invalid-feedback" id="error-datos-nombre"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="datos-email" class="form-label">Correo electrónico</label>
+                                        <input type="email" class="form-control" id="datos-email" disabled>
+                                        <div class="form-text">Este correo es tu identificador de acceso y no se puede modificar.</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="datos-telefono" class="form-label">Teléfono (opcional)</label>
+                                        <input type="tel" class="form-control" id="datos-telefono" placeholder="10 dígitos">
+                                        <div class="invalid-feedback" id="error-datos-telefono"></div>
+                                    </div>
+                                    <button type="submit" class="btn btn-brand">
+                                        <i class="bi bi-save"></i> Guardar cambios
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- CAMBIAR CONTRASEÑA -->
+                        <div class="tab-pane fade" id="tab-password" role="tabpanel">
+                            <div class="card border-0 shadow-sm p-4 p-md-5">
+                                <h5 class="fw-bold mb-4"><i class="bi bi-key text-brand"></i> Cambiar contraseña</h5>
+                                <div id="alerta-password-error" class="alert alert-danger d-none"></div>
+                                <div id="alerta-password-exito" class="alert alert-success d-none">
+                                    <i class="bi bi-check-circle-fill"></i> Tu contraseña se actualizó correctamente.
+                                </div>
+                                <form id="form-password" novalidate>
+                                    <div class="mb-3">
+                                        <label for="pass-actual" class="form-label">Contraseña actual</label>
+                                        <input type="password" class="form-control" id="pass-actual">
+                                        <div class="invalid-feedback" id="error-pass-actual"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="pass-nueva" class="form-label">Nueva contraseña</label>
+                                        <input type="password" class="form-control" id="pass-nueva" placeholder="Mínimo 8 caracteres">
+                                        <div class="invalid-feedback" id="error-pass-nueva"></div>
+                                        <div class="requisitos-password mt-2">
+                                            <small class="d-block req-item" data-req-perfil="longitud"><i class="bi bi-circle"></i> Mínimo 8 caracteres</small>
+                                            <small class="d-block req-item" data-req-perfil="mayuscula"><i class="bi bi-circle"></i> Al menos una mayúscula</small>
+                                            <small class="d-block req-item" data-req-perfil="numero"><i class="bi bi-circle"></i> Al menos un número</small>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="pass-confirmar" class="form-label">Confirmar nueva contraseña</label>
+                                        <input type="password" class="form-control" id="pass-confirmar">
+                                        <div class="invalid-feedback" id="error-pass-confirmar"></div>
+                                    </div>
+                                    <button type="submit" class="btn btn-brand">
+                                        <i class="bi bi-shield-lock"></i> Actualizar contraseña
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- DIRECCIONES -->
+                        <div class="tab-pane fade" id="tab-direcciones" role="tabpanel">
+                            <div class="card border-0 shadow-sm p-4 p-md-5">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h5 class="fw-bold mb-0"><i class="bi bi-geo-alt text-brand"></i> Direcciones</h5>
+                                    <button class="btn btn-sm btn-brand" data-bs-toggle="modal" data-bs-target="#modalDireccion">
+                                        <i class="bi bi-plus-lg"></i> Agregar
+                                    </button>
+                                </div>
+                                <div id="contenedor-direcciones"></div>
+                                <div id="direcciones-vacio" class="text-center py-4 text-muted d-none">
+                                    <i class="bi bi-signpost display-4"></i>
+                                    <p class="mt-2 mb-0">Todavía no has guardado ninguna dirección.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MIS PEDIDOS -->
+                        <div class="tab-pane fade" id="tab-pedidos" role="tabpanel">
+                            <div class="card border-0 shadow-sm p-4 p-md-5">
+                                <h5 class="fw-bold mb-3"><i class="bi bi-bag-heart text-brand"></i> Mis pedidos</h5>
+                                <div class="text-center py-4 text-muted">
+                                    <i class="bi bi-inboxes display-4"></i>
+                                    <p class="mt-2 mb-0">Aún no tienes pedidos registrados.</p>
+                                    <a href="productos.html" class="btn btn-brand mt-3">Ir a comprar</a>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== MODAL NUEVA DIRECCIÓN ===== -->
+    <div class="modal fade" id="modalDireccion" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-geo-alt text-brand"></i> Nueva dirección</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alerta-direccion-error" class="alert alert-danger d-none"></div>
+                    <form id="form-direccion" novalidate>
+                        <div class="mb-3">
+                            <label for="dir-etiqueta" class="form-label">Etiqueta</label>
+                            <select class="form-select" id="dir-etiqueta">
+                                <option value="Casa">Casa</option>
+                                <option value="Trabajo">Trabajo</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dir-calle" class="form-label">Calle y número</label>
+                            <input type="text" class="form-control" id="dir-calle">
+                            <div class="invalid-feedback" id="error-dir-calle"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dir-colonia" class="form-label">Colonia</label>
+                            <input type="text" class="form-control" id="dir-colonia">
+                            <div class="invalid-feedback" id="error-dir-colonia"></div>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-7">
+                                <label for="dir-ciudad" class="form-label">Ciudad</label>
+                                <input type="text" class="form-control" id="dir-ciudad">
+                                <div class="invalid-feedback" id="error-dir-ciudad"></div>
+                            </div>
+                            <div class="col-5">
+                                <label for="dir-cp" class="form-label">C.P.</label>
+                                <input type="text" class="form-control" id="dir-cp" maxlength="5">
+                                <div class="invalid-feedback" id="error-dir-cp"></div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-brand" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-brand" id="btn-guardar-direccion">Guardar dirección</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL AVISO DE PRIVACIDAD ===== -->
+    <div class="modal fade" id="modalPrivacidadPerfil" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-shield-check text-brand"></i> Aviso de Privacidad</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Patitas El Rey</strong> protege los datos personales que nos compartes conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.</p>
+                    <p>No compartimos ni vendemos tu información a terceros. Puedes solicitar la eliminación de tus datos escribiendo a contacto@patitaselrey.com.</p>
+                    <p class="text-muted small">Este es un aviso de ejemplo para fines de demostración del sitio.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-brand" data-bs-dismiss="modal">Entendido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer-brand pt-5 pb-4">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <h5 class="fw-bold text-white"><i class="bi bi-egg-fried"></i> Patitas El Rey</h5>
+                    <p class="text-white-50">Alitas de pollo deshidratadas 100% naturales para el bienestar de tu mejor amigo.</p>
+                </div>
+                <div class="col-lg-4 col-6">
+                    <h6 class="text-white fw-semibold mb-3">Navegación</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="index.html">Inicio</a></li>
+                        <li><a href="productos.html">Productos</a></li>
+                        <li><a href="contacto.html">Contacto</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4 col-6">
+                    <h6 class="text-white fw-semibold mb-3">Contacto</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><i class="bi bi-envelope"></i> contacto@patitaselrey.com</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="border-secondary mt-4">
+            <p class="text-center text-white-50 mb-0 small">&copy; 2026 Patitas El Rey. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <a href="https://wa.me/520000000000" class="whatsapp-float" target="_blank" aria-label="Contactar por WhatsApp">
+        <i class="bi bi-whatsapp"></i>
+    </a>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/carrito.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
