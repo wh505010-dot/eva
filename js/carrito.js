@@ -29,8 +29,9 @@ function guardarCarrito(carrito) {
  * Agrega un producto al carrito (o suma cantidad si ya existe)
  * Requiere que PRODUCTOS (definido en script.js) esté cargado en la página
  */
-function agregarAlCarrito(idProducto) {
-    const producto = obtenerProductos().find(p => p.id === idProducto);
+async function agregarAlCarrito(idProducto) {
+    const productos = await obtenerProductos();
+    const producto = productos.find(p => p.id === idProducto);
     if (!producto) return;
     const carrito = obtenerCarrito();
     const itemExistente = carrito.find(item => item.id === idProducto);
@@ -199,7 +200,7 @@ function calcularTotales(carrito) {
     }
 }
 
-const CLAVE_PEDIDOS = "patitasElRey_pedidos";
+
 
 /**
  * Se ejecuta al dar clic en "Finalizar compra".
@@ -209,11 +210,12 @@ const CLAVE_PEDIDOS = "patitasElRey_pedidos";
  * y vacía el carrito.
  */
 
-function finalizarCompra(datosPago = {}) {
+async function finalizarCompra(datosPago = {}) {
+    
     const carrito = obtenerCarrito();
     if (carrito.length === 0) return;
 
-    const sesion = obtenerSesion();
+    const sesion = await obtenerSesion();
     if (!sesion) {
         mostrarNotificacionCarrito("Inicia sesión para finalizar tu compra");
         setTimeout(() => {
@@ -230,11 +232,15 @@ function finalizarCompra(datosPago = {}) {
 
     const folio = "PER-" + Date.now().toString().slice(-6);
 
-    const pedidos = obtenerPedidos();
-    pedidos.push({
+    
+    let metodoPagoCompleto = datosPago.metodoPago || "";
+    if (datosPago.referenciaOxxo) {
+        metodoPagoCompleto += ` - Referencia: ${datosPago.referenciaOxxo}`;
+    }
+
+    const { error } = await supabaseClient.from("pedidos").insert([{
         folio,
-        email: sesion.email,
-        fecha: new Date().toISOString(),
+        user_id: sesion.id,
         productos: carrito,
         subtotal,
         iva,
@@ -242,21 +248,43 @@ function finalizarCompra(datosPago = {}) {
         total,
         estado: "Pendiente",
         direccion: datosPago.direccion || "",
-        metodoPago: datosPago.metodoPago || "",
-        tarjetaUltimos4: datosPago.tarjeta ? datosPago.tarjeta.ultimos4 : null
-    });
-    localStorage.setItem(CLAVE_PEDIDOS, JSON.stringify(pedidos));
+        metodo_pago: metodoPagoCompleto
+    }]);
+
+    if (error) {
+        console.error("Error al guardar el pedido:", error.message);
+        mostrarToast("Ocurrió un error al registrar tu pedido. Intenta de nuevo.", "error");
+        return;
+    }
+    if (error) {
+        console.error("Error al guardar el pedido:", error.message);
+        mostrarToast("Ocurrió un error al registrar tu pedido. Intenta de nuevo.", "error");
+        return;
+    }
+
+    // disparamos el correo de confirmación (no bloqueamos la compra si esto falla)
+    enviarCorreoConfirmacion(sesion, folio, carrito, total);
 
     document.getElementById("folio-compra").textContent = `#${folio}`;
-
-    // pintamos el resumen de dirección/pago en el modal de éxito
+   // pintamos el resumen de dirección/pago en el modal de éxito
     const resumenFinal = document.getElementById("checkout-resumen-final");
     if (resumenFinal) {
         let metodoTexto = datosPago.metodoPago || "";
         if (datosPago.tarjeta) metodoTexto += ` (terminación ${datosPago.tarjeta.ultimos4})`;
+
+        let bloqueOxxo = "";
+        if (datosPago.referenciaOxxo) {
+            metodoTexto = `${metodoTexto} - Referencia: ${datosPago.referenciaOxxo}`;
+            bloqueOxxo = `
+                <p class="mb-0 small mt-2"><i class="bi bi-upc-scan text-brand"></i> <strong>Referencia OXXO:</strong> ${datosPago.referenciaOxxo}</p>
+                <p class="mb-0 small text-muted">Tienes 48 horas para pagar en cualquier tienda OXXO.</p>
+            `;
+        }
+
         resumenFinal.innerHTML = `
             <p class="mb-1 small"><i class="bi bi-geo-alt text-brand"></i> <strong>Envío a:</strong> ${datosPago.direccion || "No especificada"}</p>
             <p class="mb-0 small"><i class="bi bi-wallet2 text-brand"></i> <strong>Pago:</strong> ${metodoTexto || "No especificado"}</p>
+            ${bloqueOxxo}
         `;
     }
 
@@ -266,12 +294,6 @@ function finalizarCompra(datosPago = {}) {
     localStorage.removeItem(CLAVE_CARRITO);
     actualizarContadorCarrito();
 }
-
-function obtenerPedidos() {
-    const datos = localStorage.getItem(CLAVE_PEDIDOS);
-    return datos ? JSON.parse(datos) : [];
-}
-
 /**
  * Al cargar cualquier página:
  * - Actualiza el contador del navbar
@@ -289,19 +311,20 @@ document.addEventListener("DOMContentLoaded", () => {
    solo se ve y se siente como un checkout de verdad.
    ============================================ */
 
-function abrirCheckout() {
+async function abrirCheckout() {
     const carrito = obtenerCarrito();
     if (carrito.length === 0) return;
 
-    const sesion = obtenerSesion();
+    const sesion = await obtenerSesion();
     if (!sesion) {
         mostrarNotificacionCarrito("Inicia sesión para finalizar tu compra");
         setTimeout(() => { window.location.href = "login.html"; }, 1200);
         return;
     }
 
+    
     // cargamos las direcciones guardadas del usuario (función que ya vive en auth.js)
-    const direcciones = obtenerTodasLasDirecciones().filter(d => d.email === sesion.email);
+    const direcciones = await obtenerMisDirecciones();
     const contenedorDirecciones = document.getElementById("checkout-direcciones-guardadas");
     const sinDirecciones = document.getElementById("checkout-sin-direcciones");
 
@@ -329,12 +352,11 @@ function abrirCheckout() {
         sinDirecciones.classList.remove("d-none");
     }
 
-    // reiniciamos el formulario de pago a su estado por default
-    document.querySelector('input[name="metodo-pago"][value="Efectivo contra entrega"]').checked = true;
-    document.getElementById("checkout-datos-transferencia").classList.add("d-none");
-    document.getElementById("checkout-datos-tarjeta").classList.add("d-none");
+   // reiniciamos el formulario de pago a su estado por default
+    document.querySelector('input[name="metodo-pago"][value="Tarjeta"]').checked = true;
+    document.getElementById("checkout-datos-oxxo").classList.add("d-none");
+    document.getElementById("checkout-datos-tarjeta").classList.remove("d-none");
     document.getElementById("alerta-checkout-error").classList.add("d-none");
-
     const modal = new bootstrap.Modal(document.getElementById("modalCheckout"));
     modal.show();
 }
@@ -343,17 +365,18 @@ document.addEventListener("DOMContentLoaded", () => {
     // mostrar/ocultar bloque de datos según el método de pago elegido
     document.querySelectorAll('input[name="metodo-pago"]').forEach(radio => {
         radio.addEventListener("change", () => {
-            document.getElementById("checkout-datos-transferencia").classList.toggle("d-none", radio.value !== "Transferencia bancaria");
+            document.getElementById("checkout-datos-oxxo").classList.toggle("d-none", radio.value !== "Pago en OXXO");
             document.getElementById("checkout-datos-tarjeta").classList.toggle("d-none", radio.value !== "Tarjeta");
         });
     });
 
-    // formato automático del número de tarjeta en grupos de 4 dígitos
+   // formato automático del número de tarjeta en grupos de 4 dígitos + detección de marca
     const inputTarjeta = document.getElementById("checkout-tarjeta-numero");
     if (inputTarjeta) {
         inputTarjeta.addEventListener("input", () => {
             const valor = inputTarjeta.value.replace(/\D/g, "").slice(0, 16);
             inputTarjeta.value = valor.replace(/(.{4})/g, "$1 ").trim();
+            actualizarIconoMarcaTarjeta(valor);
         });
     }
 
@@ -390,9 +413,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-function confirmarCheckout() {
+async function confirmarCheckout() {
     const alertaError = document.getElementById("alerta-checkout-error");
-    alertaError.classList.add("d-none");
+alertaError.classList.add("d-none");
 
     // ===== validar dirección =====
     const direccionSeleccionada = document.querySelector('input[name="checkout-direccion"]:checked');
@@ -412,15 +435,20 @@ function confirmarCheckout() {
         }
         direccionTexto = `${calle}, ${colonia}, ${ciudad}, C.P. ${cp}`;
     } else {
-        const sesion = obtenerSesion();
-        const direcciones = obtenerTodasLasDirecciones().filter(d => d.email === sesion.email);
+        const direcciones = await obtenerMisDirecciones();
         const dir = direcciones.find(d => String(d.id) === direccionSeleccionada.value);
         direccionTexto = `${dir.etiqueta}: ${dir.calle}, ${dir.colonia}, ${dir.ciudad}, C.P. ${dir.cp}`;
     }
 
-    // ===== validar método de pago =====
+   // ===== validar método de pago =====
     const metodoPago = document.querySelector('input[name="metodo-pago"]:checked').value;
     let datosTarjeta = null;
+    let referenciaOxxo = null;
+
+    if (metodoPago === "Pago en OXXO") {
+        // generamos una referencia numérica simulada, como las que da OXXO Pay
+        referenciaOxxo = Array.from({ length: 14 }, () => Math.floor(Math.random() * 10)).join("");
+    }
 
     if (metodoPago === "Tarjeta") {
         const numero = document.getElementById("checkout-tarjeta-numero").value.replace(/\s/g, "");
@@ -433,6 +461,10 @@ function confirmarCheckout() {
         if (numero.length !== 16) {
             document.getElementById("checkout-tarjeta-numero").classList.add("is-invalid");
             document.getElementById("error-checkout-tarjeta-numero").textContent = "El número debe tener 16 dígitos.";
+            valido = false;
+        } else if (!validarLuhn(numero)) {
+            document.getElementById("checkout-tarjeta-numero").classList.add("is-invalid");
+            document.getElementById("error-checkout-tarjeta-numero").textContent = "El número de tarjeta no es válido.";
             valido = false;
         } else {
             document.getElementById("checkout-tarjeta-numero").classList.remove("is-invalid");
@@ -470,9 +502,89 @@ function confirmarCheckout() {
         datosTarjeta = { ultimos4: numero.slice(-4) };
     }
 
-    // todo validado: cerramos el checkout y completamos la compra
+// todo validado: cerramos el checkout y completamos la compra
+   
+   // todo validado: cerramos el checkout y completamos la compra
     const modalCheckout = bootstrap.Modal.getInstance(document.getElementById("modalCheckout"));
     modalCheckout.hide();
 
-    finalizarCompra({ direccion: direccionTexto, metodoPago, tarjeta: datosTarjeta });
+    finalizarCompra({ direccion: direccionTexto, metodoPago, tarjeta: datosTarjeta, referenciaOxxo });
+}
+/**
+ * Llama a la Edge Function de Supabase para mandar el correo
+ * de confirmación de compra. Si falla, solo lo registramos en
+ * consola - no debe impedir que la compra se complete.
+ */
+async function enviarCorreoConfirmacion(sesion, folio, productos, total) {
+    try {
+        const { error } = await supabaseClient.functions.invoke("enviar-confirmacion-pedido", {
+            body: {
+                email: sesion.email,
+                nombre: sesion.nombre,
+                folio,
+                productos,
+                total
+            }
+        });
+
+        if (error) {
+            console.error("No se pudo enviar el correo de confirmación:", error.message);
+        }
+    } catch (err) {
+        console.error("Error al llamar la función de correo:", err);
+    }
+}
+
+/**
+ * Detecta la marca de la tarjeta según sus primeros dígitos
+ * (los mismos rangos que usan los bancos reales) y actualiza el ícono.
+ */
+function actualizarIconoMarcaTarjeta(numero) {
+    const contenedorIcono = document.getElementById("checkout-tarjeta-marca");
+    if (!contenedorIcono) return;
+
+    let marca = null;
+
+    if (/^4/.test(numero)) {
+        marca = "visa";
+    } else if (/^(5[1-5]|22[2-9]|2[3-6]|27[01]|2720)/.test(numero)) {
+        marca = "mastercard";
+    } else if (/^3[47]/.test(numero)) {
+        marca = "amex";
+    }
+
+    const iconos = {
+        visa: '<i class="bi bi-credit-card-2-front-fill text-primary"></i> <small class="fw-bold text-primary">VISA</small>',
+        mastercard: '<i class="bi bi-credit-card-2-front-fill text-danger"></i> <small class="fw-bold text-danger">Mastercard</small>',
+        amex: '<i class="bi bi-credit-card-2-front-fill text-info"></i> <small class="fw-bold text-info">Amex</small>'
+    };
+
+    contenedorIcono.innerHTML = marca
+        ? iconos[marca]
+        : '<i class="bi bi-credit-card text-muted"></i>';
+}
+
+/**
+ * Algoritmo de Luhn: el mismo checksum matemático que usan los bancos
+ * para detectar si un número de tarjeta es matemáticamente válido.
+ * No confirma que la tarjeta exista o tenga fondos, solo que el
+ * número está bien formado según el estándar de la industria.
+ */
+function validarLuhn(numero) {
+    let suma = 0;
+    let alternar = false;
+
+    for (let i = numero.length - 1; i >= 0; i--) {
+        let digito = parseInt(numero.charAt(i), 10);
+
+        if (alternar) {
+            digito *= 2;
+            if (digito > 9) digito -= 9;
+        }
+
+        suma += digito;
+        alternar = !alternar;
+    }
+
+    return suma % 10 === 0;
 }

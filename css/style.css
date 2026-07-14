@@ -152,6 +152,15 @@ body {
 .footer-links a:hover {
     color: var(--brand-verde);
 }
+.footer-links li {
+    color: rgba(255,255,255,0.7);
+    line-height: 2;
+}
+.footer-links li i {
+    color: var(--brand-verde);
+    margin-right: 6px;
+    width: 16px;
+}
 .social-icons a {
     color: #fff;
     background: rgba(255,255,255,0.1);
@@ -631,6 +640,11 @@ body {
 }
 .admin-metrica-texto {
     font-size: 1.1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.3;
 }
 .admin-metrica-label {
     color: #8a7b6c;
@@ -767,4 +781,56 @@ body {
     background-color: var(--brand-beige);
     border-radius: 12px;
     padding: 14px 18px;
+}
+
+.separador-o {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #b0a494;
+    font-size: 0.85rem;
+}
+.separador-o::before,
+.separador-o::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #e5ddd0;
+}
+.separador-o span {
+    padding: 0 12px;
+}
+
+/* fondo distinto para diferenciar visualmente el acceso de admin */
+.admin-login-section {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, var(--brand-cafe-dark) 0%, #2a1d15 100%);
+}
+
+/* tarjetas de mensajes de contacto en el panel admin */
+.mensaje-admin-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+.mensaje-admin-card.mensaje-no-leido {
+    border-left: 4px solid var(--brand-verde);
+}
+.mensaje-texto {
+    background-color: var(--brand-beige);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: #5c4a3a;
+    font-size: 0.9rem;
+}
+.badge-nuevo {
+    background-color: var(--brand-verde);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 50px;
 }

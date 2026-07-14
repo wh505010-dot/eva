@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="img/favicon/favicon.png">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -195,28 +196,30 @@
                     <h6 class="fw-bold mb-3"><i class="bi bi-wallet2 text-brand"></i> Método de pago</h6>
                     <div class="metodo-pago-opciones mb-3">
                         <label class="metodo-pago-item">
-                            <input type="radio" name="metodo-pago" value="Efectivo contra entrega" checked>
-                            <span><i class="bi bi-cash-coin"></i> Efectivo contra entrega</span>
-                        </label>
-                        <label class="metodo-pago-item">
-                            <input type="radio" name="metodo-pago" value="Transferencia bancaria">
-                            <span><i class="bi bi-bank"></i> Transferencia bancaria</span>
-                        </label>
-                        <label class="metodo-pago-item">
-                            <input type="radio" name="metodo-pago" value="Tarjeta">
+                            <input type="radio" name="metodo-pago" value="Tarjeta" checked>
                             <span><i class="bi bi-credit-card"></i> Tarjeta de crédito/débito</span>
                         </label>
+                        <label class="metodo-pago-item">
+                            <input type="radio" name="metodo-pago" value="Pago en OXXO">
+                            <span><i class="bi bi-shop"></i> Pago en OXXO</span>
+                        </label>
                     </div>
 
-                    <div id="checkout-datos-transferencia" class="datos-pago-extra d-none">
-                        <p class="mb-1 small text-muted">Realiza tu transferencia a la siguiente cuenta y envíanos tu comprobante por WhatsApp:</p>
-                        <p class="mb-0 small"><strong>Banco:</strong> BBVA &nbsp; <strong>Cuenta:</strong> 0123456789 &nbsp; <strong>CLABE:</strong> 012345678901234567</p>
+                    <div id="checkout-datos-oxxo" class="datos-pago-extra d-none">
+                        <p class="mb-1 small text-muted">Al confirmar tu pedido, generaremos una referencia de pago para que la lleves a cualquier tienda OXXO:</p>
+                        <p class="mb-0 fw-bold text-brand" id="oxxo-referencia-preview">Se genera al confirmar</p>
+                        <p class="mb-0 small text-muted mt-1">Tienes 48 horas para realizar tu pago antes de que se cancele el pedido.</p>
                     </div>
-
                     <div id="checkout-datos-tarjeta" class="datos-pago-extra d-none">
                         <div class="mb-3">
                             <label class="form-label">Número de tarjeta</label>
-                            <input type="text" class="form-control" id="checkout-tarjeta-numero" placeholder="0000 0000 0000 0000" maxlength="19">
+                         <div class="input-group">
+    <input type="text" class="form-control" id="checkout-tarjeta-numero" placeholder="0000 0000 0000 0000" maxlength="19">
+    <span class="input-group-text bg-white" id="checkout-tarjeta-marca">
+        <i class="bi bi-credit-card text-muted"></i>
+    </span>
+</div>
+<div class="invalid-feedback" id="error-checkout-tarjeta-numero"></div>
                             <div class="invalid-feedback" id="error-checkout-tarjeta-numero"></div>
                         </div>
                         <div class="mb-3">
@@ -261,8 +264,8 @@
                         Tu pedido <strong id="folio-compra"></strong> fue registrado correctamente.
                     </p>
                     <div class="checkout-resumen-final text-start mb-3" id="checkout-resumen-final"></div>
-                    <a href="https://wa.me/520000000000" target="_blank" class="btn btn-brand w-100 mb-2">
-                        <i class="bi bi-whatsapp"></i> Confirmar por WhatsApp
+                    <a href="index.html" class="btn btn-brand w-100 mb-2">
+                        <i class="bi bi-check-circle"></i> Confirmar
                     </a>
                     <a href="index.html" class="btn btn-outline-brand w-100">Volver al inicio</a>
                 </div>
@@ -273,6 +276,7 @@
         <i class="bi bi-whatsapp"></i>
     </a>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/supabase-config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/carrito.js"></script>
 <script src="js/script.js"></script>

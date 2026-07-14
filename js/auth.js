@@ -1,124 +1,128 @@
 /* ============================================
    PATITAS EL REY - auth.js
-   Simulación de registro / login con LocalStorage
-   ============================================*/
-
-
-const CLAVE_USUARIOS = "patitasElRey_usuarios";
-const CLAVE_SESION = "patitasElRey_sesion";
+   Autenticación real con Supabase Auth
+   ============================================ */
 
 /**
- * Ofuscación MUY simple del password (NO es un hash criptográfico real).
- * Solo evita que se vea el texto plano a simple vista en LocalStorage.
+ * Registra un nuevo usuario usando Supabase Auth.
+ * El nombre y el rol se guardan como "metadata" del usuario.
  */
-function ofuscarPassword(password) {
-    return btoa(unescape(encodeURIComponent(password)));
-}
-
-/**
- * Obtiene el arreglo de usuarios registrados
- */
-function obtenerUsuarios() {
-    const datos = localStorage.getItem(CLAVE_USUARIOS);
-    return datos ? JSON.parse(datos) : [];
-}
-
-/**
- * Guarda el arreglo completo de usuarios
- */
-function guardarUsuarios(usuarios) {
-    localStorage.setItem(CLAVE_USUARIOS, JSON.stringify(usuarios));
-}
-
-/**
- * Registra un nuevo usuario. Devuelve { exito: bool, mensaje: string }
- */
-
-function registrarUsuario(nombre, email, password) {
-    const usuarios = obtenerUsuarios();
-    const emailNormalizado = email.trim().toLowerCase();
-
-    const yaExiste = usuarios.some(u => u.email === emailNormalizado);
-    if (yaExiste) {
-        return { exito: false, mensaje: "Ya existe una cuenta registrada con ese correo." };
-    }
-
-    usuarios.push({
-        nombre: nombre.trim(),
-        email: emailNormalizado,
-        password: ofuscarPassword(password),
-        rol: "cliente",
-        fechaRegistro: new Date().toISOString()
+async function registrarUsuario(nombre, email, password) {
+    const { data, error } = await supabaseClient.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password: password,
+        options: {
+            data: { nombre: nombre.trim(), rol: "cliente" }
+        }
     });
 
-    guardarUsuarios(usuarios);
+    if (error) {
+        if (error.message.toLowerCase().includes("already registered")) {
+            return { exito: false, mensaje: "Ya existe una cuenta registrada con ese correo." };
+        }
+        return { exito: false, mensaje: error.message };
+    }
     return { exito: true, mensaje: "Cuenta creada correctamente." };
 }
 
-
 /**
- * Inicia sesión. Devuelve { exito: bool, mensaje: string }
+ * Inicia sesión con Supabase Auth.
  */
+async function iniciarSesion(email, password) {
+    const { error } = await supabaseClient.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password: password
+    });
 
-function iniciarSesion(email, password) {
-    const usuarios = obtenerUsuarios();
-    const emailNormalizado = email.trim().toLowerCase();
-    const passwordOfuscado = ofuscarPassword(password);
-
-    const usuario = usuarios.find(
-        u => u.email === emailNormalizado && u.password === passwordOfuscado
-    );
-
-    if (!usuario) {
+    if (error) {
         return { exito: false, mensaje: "Correo o contraseña incorrectos." };
     }
-
-    localStorage.setItem(CLAVE_SESION, JSON.stringify({
-        nombre: usuario.nombre,
-        email: usuario.email,
-        rol: usuario.rol || "cliente"
-    }));
-
     return { exito: true, mensaje: "Sesión iniciada correctamente." };
 }
 
 /**
  * Cierra la sesión actual
  */
-function cerrarSesion() {
-    localStorage.removeItem(CLAVE_SESION);
-    window.location.href = "index.html";
+async function cerrarSesion() {
+    const sesion = await obtenerSesion();
+    const eraAdmin = sesion && sesion.rol === "admin";
+
+    await supabaseClient.auth.signOut();
+
+    window.location.href = eraAdmin ? "admin-login.html" : "index.html";
 }
 
 /**
- * Devuelve el usuario en sesión, o null si no hay nadie logueado
+ * Devuelve el usuario en sesión (o null). Es async porque
+ * Supabase revisa el token guardado antes de responder.
  */
-function obtenerSesion() {
-    const datos = localStorage.getItem(CLAVE_SESION);
-    return datos ? JSON.parse(datos) : null;
+async function obtenerSesion() {
+    const { data } = await supabaseClient.auth.getSession();
+    if (!data.session) return null;
+
+    const user = data.session.user;
+    const meta = user.user_metadata;
+
+    // según cómo entró (correo normal o Google), el nombre viene en un campo distinto
+    const nombreReal = meta.nombre || meta.full_name || meta.name || user.email;
+
+    return {
+        id: user.id,
+        email: user.email,
+        nombre: nombreReal,
+        telefono: meta.telefono || "",
+        rol: meta.rol || "cliente",
+        fechaRegistro: user.created_at
+    };
 }
 
 /**
  * Protege una página: si no hay sesión activa, redirige a login.html
- * Se llama al inicio de perfil.html
  */
-function protegerPagina() {
-    if (!obtenerSesion()) {
+async function protegerPagina() {
+    const sesion = await obtenerSesion();
+    if (!sesion) {
         window.location.href = "login.html";
     }
+    return sesion;
 }
 
 /**
- * Actualiza el navbar en TODAS las páginas para mostrar
- * "Iniciar sesión" o el nombre del usuario logueado + menú
+ * Protege admin.html y páginas relacionadas
  */
-function actualizarNavbarAuth() {
+async function protegerPaginaAdmin() {
+    const sesion = await obtenerSesion();
+    if (!sesion || sesion.rol !== "admin") {
+        window.location.href = "index.html";
+        return null;
+    }
+    return sesion;
+}
+
+/**
+ * Actualiza el navbar mostrando "Iniciar sesión" o el nombre del usuario
+ */
+async function actualizarNavbarAuth() {
     const contenedor = document.getElementById("nav-auth");
     if (!contenedor) return;
 
-    const sesion = obtenerSesion();
+    const sesion = await obtenerSesion();
 
-    if (sesion) {
+    if (sesion && sesion.rol === "admin") {
+        // el admin navegando el sitio público ve un acceso directo de vuelta a su panel
+        contenedor.innerHTML = `
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle d-flex align-items-center gap-1" href="#" role="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-shield-check"></i> ${sesion.nombre.split(" ")[0]}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="admin.html"><i class="bi bi-speedometer2"></i> Volver al panel</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="cerrarSesion(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a></li>
+                </ul>
+            </li>
+        `;
+    } else if (sesion) {
         contenedor.innerHTML = `
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle d-flex align-items-center gap-1" href="#" role="button" data-bs-toggle="dropdown">
@@ -139,9 +143,7 @@ function actualizarNavbarAuth() {
         `;
     }
 }
-
 document.addEventListener("DOMContentLoaded", actualizarNavbarAuth);
-
 /* ============================================
    LÓGICA DE LA PÁGINA registro.html
    ============================================ */
@@ -261,7 +263,7 @@ function inicializarFormularioRegistro() {
     campoPassword2.addEventListener("input", validarPassword2);
     campoTerminos.addEventListener("change", validarTerminos);
 
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", async function (e) {
         e.preventDefault();
         alertaError.classList.add("d-none");
 
@@ -275,8 +277,7 @@ function inicializarFormularioRegistro() {
             return;
         }
 
-        const resultado = registrarUsuario(campoNombre.value, campoEmail.value, campoPassword.value);
-
+        const resultado = await registrarUsuario(campoNombre.value, campoEmail.value, campoPassword.value);
         if (!resultado.exito) {
             alertaError.textContent = resultado.mensaje;
             alertaError.classList.remove("d-none");
@@ -348,7 +349,7 @@ function inicializarFormularioLogin() {
         return true;
     }
 
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", async function (e) {
         e.preventDefault();
         alertaError.classList.add("d-none");
 
@@ -356,7 +357,7 @@ function inicializarFormularioLogin() {
         const passwordValido = validarPassword();
         if (!(emailValido && passwordValido)) return;
 
-    const resultado = iniciarSesion(campoEmail.value, campoPassword.value);
+       const resultado = await iniciarSesion(campoEmail.value, campoPassword.value);
 
         if (!resultado.exito) {
             alertaError.textContent = resultado.mensaje;
@@ -364,12 +365,17 @@ function inicializarFormularioLogin() {
             return;
         }
 
-        const sesion = obtenerSesion();
+        const sesion = await obtenerSesion();
+
+        // el login normal es exclusivo para clientes; si es admin, lo rechazamos aquí
         if (sesion && sesion.rol === "admin") {
-            window.location.href = "admin.html";
-        } else {
-            window.location.href = "perfil.html";
-        }   
+            await cerrarSesionSilenciosa();
+            alertaError.textContent = "Este acceso es exclusivo para clientes.";
+            alertaError.classList.remove("d-none");
+            return;
+        }
+
+        window.location.href = "perfil.html";
     });
 
     // Simulación de "recuperar contraseña" (no manda correo real)
@@ -393,37 +399,28 @@ document.addEventListener("DOMContentLoaded", inicializarFormularioLogin);
 /* ============================================
    LÓGICA DE LA PÁGINA perfil.html
    ============================================ */
-
-function inicializarPaginaPerfil() {
+async function inicializarPaginaPerfil() {
     const nombreEl = document.getElementById("perfil-nombre");
     if (!nombreEl) return; // No estamos en perfil.html
 
-    protegerPagina(); // Redirige a login.html si no hay sesión
-
-    const usuarios = obtenerUsuarios();
-    const sesion = obtenerSesion();
-    if (!sesion) return; // protegerPagina ya está redirigiendo
-
-    const usuarioCompleto = usuarios.find(u => u.email === sesion.email);
+    const sesion = await protegerPagina(); // Redirige a login.html si no hay sesión
+    if (!sesion) return;
 
     nombreEl.textContent = sesion.nombre;
     document.getElementById("perfil-email").textContent = sesion.email;
 
-    if (usuarioCompleto) {
-        const fecha = new Date(usuarioCompleto.fechaRegistro);
-        document.getElementById("perfil-fecha").textContent = fecha.toLocaleDateString("es-MX", {
-            year: "numeric", month: "long", day: "numeric"
-        });
-    }
+    const fecha = new Date(sesion.fechaRegistro);
+    document.getElementById("perfil-fecha").textContent = fecha.toLocaleDateString("es-MX", {
+        year: "numeric", month: "long", day: "numeric"
+    });
 
-    // aquí inicializamos las 4 pestañas nuevas del perfil
-    cargarDatosPersonales(usuarioCompleto);
+    // aquí inicializamos las 4 pestañas del perfil
+    cargarDatosPersonales(sesion);
     inicializarFormularioDatos();
     inicializarFormularioPassword();
     inicializarDirecciones();
     renderizarPedidos();
 }
-
 
 document.addEventListener("DOMContentLoaded", inicializarPaginaPerfil);
 
@@ -431,11 +428,11 @@ document.addEventListener("DOMContentLoaded", inicializarPaginaPerfil);
    PESTAÑA: MIS DATOS
    ============================================ */
 
-function cargarDatosPersonales(usuario) {
-    if (!usuario) return;
-    document.getElementById("datos-nombre").value = usuario.nombre;
-    document.getElementById("datos-email").value = usuario.email;
-    document.getElementById("datos-telefono").value = usuario.telefono || "";
+function cargarDatosPersonales(sesion) {
+    if (!sesion) return;
+    document.getElementById("datos-nombre").value = sesion.nombre;
+    document.getElementById("datos-email").value = sesion.email;
+    document.getElementById("datos-telefono").value = sesion.telefono || "";
 }
 
 function inicializarFormularioDatos() {
@@ -483,27 +480,28 @@ function inicializarFormularioDatos() {
     campoNombre.addEventListener("input", validarNombre);
     campoTelefono.addEventListener("input", validarTelefono);
 
-    form.addEventListener("submit", function (e) {
+  form.addEventListener("submit", async function (e) {
         e.preventDefault();
         if (!(validarNombre() && validarTelefono())) return;
 
-        const sesion = obtenerSesion();
-        const usuarios = obtenerUsuarios();
-        const usuario = usuarios.find(u => u.email === sesion.email);
-        if (!usuario) return;
+        const { error } = await supabaseClient.auth.updateUser({
+            data: {
+                nombre: campoNombre.value.trim(),
+                telefono: campoTelefono.value.trim()
+            }
+        });
 
-        usuario.nombre = campoNombre.value.trim();
-        usuario.telefono = campoTelefono.value.trim();
-        guardarUsuarios(usuarios);
+        if (error) {
+            mostrarToast("No se pudieron actualizar tus datos.", "error");
+            return;
+        }
 
-        // actualizamos también la sesión activa, para que el navbar refleje el nombre nuevo
-        localStorage.setItem(CLAVE_SESION, JSON.stringify({ nombre: usuario.nombre, email: usuario.email }));
-        document.getElementById("perfil-nombre").textContent = usuario.nombre;
+        document.getElementById("perfil-nombre").textContent = campoNombre.value.trim();
         actualizarNavbarAuth();
 
         alertaExito.classList.remove("d-none");
         setTimeout(() => alertaExito.classList.add("d-none"), 3500);
-    });
+    });  
 }
 
 /* ============================================
@@ -551,18 +549,22 @@ function inicializarFormularioPassword() {
         }
     }
 
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", async function (e) {
         e.preventDefault();
         alertaError.classList.add("d-none");
 
-        const sesion = obtenerSesion();
-        const usuarios = obtenerUsuarios();
-        const usuario = usuarios.find(u => u.email === sesion.email);
-        if (!usuario) return;
+        const sesion = await obtenerSesion();
+        if (!sesion) return;
 
         let valido = true;
 
-        if (ofuscarPassword(campoActual.value) !== usuario.password) {
+        // confirmamos la contraseña actual re-autenticando contra Supabase
+        const { error: errorReauth } = await supabaseClient.auth.signInWithPassword({
+            email: sesion.email,
+            password: campoActual.value
+        });
+
+        if (errorReauth) {
             marcarInvalido(campoActual, "La contraseña actual no es correcta.");
             valido = false;
         } else {
@@ -584,10 +586,14 @@ function inicializarFormularioPassword() {
             marcarValido(campoConfirmar);
         }
 
-        if (!valido) return;
+       if (!valido) return;
 
-        usuario.password = ofuscarPassword(campoNueva.value);
-        guardarUsuarios(usuarios);
+        const { error } = await supabaseClient.auth.updateUser({ password: campoNueva.value });
+        if (error) {
+            alertaError.textContent = "No se pudo actualizar la contraseña.";
+            alertaError.classList.remove("d-none");
+            return;
+        }
 
         form.reset();
         [campoActual, campoNueva, campoConfirmar].forEach(c => c.classList.remove("is-valid", "is-invalid"));
@@ -603,16 +609,33 @@ function inicializarFormularioPassword() {
 
 /* ============================================
    PESTAÑA: DIRECCIONES
-   Se guardan todas juntas en LocalStorage, cada una
-   con el correo del dueño para poder filtrarlas.
+   Ahora viven en Supabase, cada una ligada al
+   user_id del dueño (protegido con RLS).
    ============================================ */
 
-const CLAVE_DIRECCIONES = "patitasElRey_direcciones";
+/**
+ * Trae las direcciones del usuario en sesión, directo desde Supabase
+ */
+async function obtenerMisDirecciones() {
+    const sesion = await obtenerSesion();
+    if (!sesion) return [];
+
+    const { data, error } = await supabaseClient
+        .from("direcciones")
+        .select("*")
+        .eq("user_id", sesion.id)
+        .order("created_at", { ascending: true });
+
+    if (error) {
+        console.error("Error al leer direcciones:", error.message);
+        return [];
+    }
+    return data;
+}
 
 /**
  * Busca la ciudad/estado a partir de un código postal mexicano,
- * usando la API pública y gratuita de Zippopotam (sin necesidad de backend propio).
- * Rellena automáticamente el campo de ciudad indicado.
+ * usando la API pública y gratuita de Zippopotam.
  */
 async function buscarCiudadPorCP(cp, inputCiudadId, elementoEstadoId = null) {
     const inputCiudad = document.getElementById(inputCiudadId);
@@ -638,18 +661,8 @@ async function buscarCiudadPorCP(cp, inputCiudadId, elementoEstadoId = null) {
             }
         }
     } catch (error) {
-        // si el C.P. no existe o falla la conexión, dejamos que el usuario escriba manual
         inputCiudad.classList.remove("is-valid");
     }
-}
-
-function obtenerTodasLasDirecciones() {
-    const datos = localStorage.getItem(CLAVE_DIRECCIONES);
-    return datos ? JSON.parse(datos) : [];
-}
-
-function guardarTodasLasDirecciones(direcciones) {
-    localStorage.setItem(CLAVE_DIRECCIONES, JSON.stringify(direcciones));
 }
 
 function inicializarDirecciones() {
@@ -658,7 +671,6 @@ function inicializarDirecciones() {
 
     renderizarDirecciones();
 
-    // autocompletar ciudad al escribir el C.P. en el modal de nueva dirección
     const inputCpDireccion = document.getElementById("dir-cp");
     if (inputCpDireccion) {
         inputCpDireccion.addEventListener("input", () => {
@@ -670,7 +682,7 @@ function inicializarDirecciones() {
     }
 
     const btnGuardar = document.getElementById("btn-guardar-direccion");
-    btnGuardar.addEventListener("click", () => {
+    btnGuardar.addEventListener("click", async () => {
         const etiqueta = document.getElementById("dir-etiqueta").value;
         const calle = document.getElementById("dir-calle");
         const colonia = document.getElementById("dir-colonia");
@@ -704,35 +716,41 @@ function inicializarDirecciones() {
         }
         alertaError.classList.add("d-none");
 
-        const sesion = obtenerSesion();
-        const direcciones = obtenerTodasLasDirecciones();
-        direcciones.push({
-            id: Date.now(),
-            email: sesion.email,
+        const sesion = await obtenerSesion();
+        if (!sesion) return;
+
+        const { error } = await supabaseClient.from("direcciones").insert([{
+            user_id: sesion.id,
             etiqueta,
             calle: calle.value.trim(),
             colonia: colonia.value.trim(),
             ciudad: ciudad.value.trim(),
             cp: cp.value.trim()
-        });
-        guardarTodasLasDirecciones(direcciones);
-        renderizarDirecciones();
+        }]);
+
+        if (error) {
+            alertaError.textContent = "No se pudo guardar la dirección. Intenta de nuevo.";
+            alertaError.classList.remove("d-none");
+            return;
+        }
+
+        await renderizarDirecciones();
 
         document.getElementById("form-direccion").reset();
         [calle, colonia, ciudad, cp].forEach(c => c.classList.remove("is-invalid"));
 
         const modalEl = document.getElementById("modalDireccion");
         bootstrap.Modal.getInstance(modalEl)?.hide();
+        mostrarToast("Dirección guardada correctamente", "exito");
     });
 }
 
-function renderizarDirecciones() {
+async function renderizarDirecciones() {
     const contenedor = document.getElementById("contenedor-direcciones");
     const vacio = document.getElementById("direcciones-vacio");
     if (!contenedor) return;
 
-    const sesion = obtenerSesion();
-    const direcciones = obtenerTodasLasDirecciones().filter(d => d.email === sesion.email);
+    const direcciones = await obtenerMisDirecciones();
 
     if (direcciones.length === 0) {
         contenedor.innerHTML = "";
@@ -755,11 +773,14 @@ function renderizarDirecciones() {
     `).join("");
 }
 
-function eliminarDireccion(id) {
-    let direcciones = obtenerTodasLasDirecciones();
-    direcciones = direcciones.filter(d => d.id !== id);
-    guardarTodasLasDirecciones(direcciones);
-    renderizarDirecciones();
+async function eliminarDireccion(id) {
+    const { error } = await supabaseClient.from("direcciones").delete().eq("id", id);
+    if (error) {
+        mostrarToast("No se pudo eliminar la dirección.", "error");
+        return;
+    }
+    await renderizarDirecciones();
+    mostrarToast("Dirección eliminada", "info");
 }
 /* ============================================
    PESTAÑA: MIS PEDIDOS
@@ -767,18 +788,26 @@ function eliminarDireccion(id) {
    y muestra solo los del usuario en sesión.
    ============================================ */
 
-function renderizarPedidos() {
+async function renderizarPedidos() {
     const contenedorTab = document.getElementById("tab-pedidos");
     if (!contenedorTab) return;
 
-    const sesion = obtenerSesion();
-    const datos = localStorage.getItem("patitasElRey_pedidos");
-    const todosLosPedidos = datos ? JSON.parse(datos) : [];
-    const misPedidos = todosLosPedidos
-        .filter(p => p.email === sesion.email)
-        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // el más reciente primero
+    const sesion = await obtenerSesion();
+    if (!sesion) return;
+
+    const { data: misPedidos, error } = await supabaseClient
+        .from("pedidos")
+        .select("*")
+        .eq("user_id", sesion.id)
+        .order("created_at", { ascending: false });
 
     const card = contenedorTab.querySelector(".card");
+
+    if (error) {
+        console.error("Error al leer pedidos:", error.message);
+        card.innerHTML = `<p class="text-danger">No se pudieron cargar tus pedidos.</p>`;
+        return;
+    }
 
     if (misPedidos.length === 0) {
         card.innerHTML = `
@@ -799,14 +828,14 @@ function renderizarPedidos() {
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div>
                         <p class="mb-0 fw-bold">Pedido #${pedido.folio}</p>
-                        <p class="mb-0 text-muted small">${new Date(pedido.fecha).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}</p>
+                        <p class="mb-0 text-muted small">${new Date(pedido.created_at).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}</p>
                     </div>
-                    <span class="badge-pedido">Registrado</span>
+                    <span class="badge-pedido">${pedido.estado}</span>
                 </div>
                 <ul class="list-unstyled small text-muted mb-2">
                     ${pedido.productos.map(prod => `<li>${prod.cantidad}x ${prod.nombre}</li>`).join("")}
                 </ul>
-                <p class="mb-0 text-end fw-bold text-brand">$${pedido.total.toFixed(2)} MXN</p>
+                <p class="mb-0 text-end fw-bold text-brand">$${Number(pedido.total).toFixed(2)} MXN</p>
             </div>
         `).join("")}
     `;
@@ -818,58 +847,31 @@ function renderizarPedidos() {
    nada del flujo de clientes normales.
    ============================================ */
 
-/**
- * Crea la cuenta de administrador de ejemplo la primera vez
- * que se carga el sitio, si todavía no existe.
- * Usuario: admin@patitaselrey.com / Contraseña: Admin1234
- */
-function sembrarAdminInicial() {
-    const usuarios = obtenerUsuarios();
-    const existeAdmin = usuarios.some(u => u.email === "admin@patitaselrey.com");
-    if (existeAdmin) return;
 
-    usuarios.push({
-        nombre: "Administrador",
-        email: "admin@patitaselrey.com",
-        password: ofuscarPassword("Admin1234"),
-        rol: "admin",
-        fechaRegistro: new Date().toISOString()
-    });
-    guardarUsuarios(usuarios);
-}
-document.addEventListener("DOMContentLoaded", sembrarAdminInicial);
-
-/**
- * Protege admin.html: si no hay sesión o el usuario no es admin,
- * lo regresamos al inicio. Un cliente normal jamás debe poder
- * quedarse aquí aunque escriba la URL directo.
- */
-function protegerPaginaAdmin() {
-    const sesion = obtenerSesion();
-    if (!sesion || sesion.rol !== "admin") {
-        window.location.href = "index.html";
-    }
-}
 
 /**
  * Calcula las métricas del dashboard leyendo lo que ya existe
  * en localStorage (usuarios y pedidos), sin tocar esas claves.
  */
-function inicializarDashboardAdmin() {
+async function inicializarDashboardAdmin() {
     const contenedor = document.getElementById("admin-dashboard");
     if (!contenedor) return; // no estamos en admin.html
 
-    protegerPaginaAdmin();
-    const sesion = obtenerSesion();
-    if (!sesion || sesion.rol !== "admin") return;
+    const sesion = await protegerPaginaAdmin();
+    if (!sesion) return;
 
     document.getElementById("admin-nombre").textContent = sesion.nombre;
 
-    const usuarios = obtenerUsuarios();
-    const pedidos = JSON.parse(localStorage.getItem("patitasElRey_pedidos") || "[]");
+    const { data: pedidos, error } = await supabaseClient.from("pedidos").select("*");
 
-    const totalVentas = pedidos.reduce((sum, p) => sum + p.total, 0);
-    const totalClientes = usuarios.filter(u => u.rol !== "admin").length;
+    if (error) {
+        console.error("Error al leer pedidos:", error.message);
+        return;
+    }
+
+    const totalVentas = pedidos.reduce((sum, p) => sum + Number(p.total), 0);
+    // contamos usuarios distintos que han comprado (proxy de clientes activos)
+    const totalClientes = new Set(pedidos.map(p => p.user_id)).size;
 
     // contamos cuántas piezas se han vendido de cada producto para saber el más popular
     const conteoProductos = {};
@@ -901,25 +903,31 @@ document.addEventListener("DOMContentLoaded", inicializarDashboardAdmin);
    del usuario en sesión.
    ============================================ */
 
-function inicializarPedidosAdmin() {
+async function inicializarPedidosAdmin() {
     const contenedor = document.getElementById("admin-pedidos-page");
     if (!contenedor) return; // no estamos en admin-pedidos.html
 
-    protegerPaginaAdmin();
-    const sesion = obtenerSesion();
-    if (!sesion || sesion.rol !== "admin") return;
+    const sesion = await protegerPaginaAdmin();
+    if (!sesion) return;
 
     renderizarPedidosAdmin();
 }
 document.addEventListener("DOMContentLoaded", inicializarPedidosAdmin);
 
-function renderizarPedidosAdmin() {
+async function renderizarPedidosAdmin() {
     const contenedor = document.getElementById("contenedor-pedidos-admin");
     const vacio = document.getElementById("pedidos-admin-vacio");
     if (!contenedor) return;
 
-    const pedidos = JSON.parse(localStorage.getItem("patitasElRey_pedidos") || "[]");
-    const usuarios = obtenerUsuarios();
+    const { data: pedidos, error } = await supabaseClient
+        .from("pedidos")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error("Error al leer pedidos:", error.message);
+        return;
+    }
 
     if (pedidos.length === 0) {
         contenedor.innerHTML = "";
@@ -928,12 +936,7 @@ function renderizarPedidosAdmin() {
     }
     vacio.classList.add("d-none");
 
-    // más reciente primero
-    const ordenados = [...pedidos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
-    contenedor.innerHTML = ordenados.map(pedido => {
-        const cliente = usuarios.find(u => u.email === pedido.email);
-        const nombreCliente = cliente ? cliente.nombre : pedido.email;
+    contenedor.innerHTML = pedidos.map(pedido => {
         const estadoActual = pedido.estado || "Pendiente";
 
         return `
@@ -942,8 +945,7 @@ function renderizarPedidosAdmin() {
                     <div>
                         <p class="mb-0 fw-bold">Pedido #${pedido.folio}</p>
                         <p class="mb-0 text-muted small">
-                            <i class="bi bi-person"></i> ${nombreCliente} &nbsp;•&nbsp;
-                            ${new Date(pedido.fecha).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}
+                            ${new Date(pedido.created_at).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}
                         </p>
                     </div>
                     <span class="badge-estado badge-estado-${estadoActual.toLowerCase()}">${estadoActual}</span>
@@ -954,8 +956,8 @@ function renderizarPedidosAdmin() {
                 </ul>
 
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <p class="mb-0 fw-bold text-brand">$${pedido.total.toFixed(2)} MXN</p>
-                    <select class="form-select form-select-sm w-auto" onchange="cambiarEstadoPedido('${pedido.folio}', this.value)">
+                    <p class="mb-0 fw-bold text-brand">$${Number(pedido.total).toFixed(2)} MXN</p>
+                    <select class="form-select form-select-sm w-auto" onchange="cambiarEstadoPedido(${pedido.id}, this.value)">
                         <option value="Pendiente" ${estadoActual === "Pendiente" ? "selected" : ""}>Pendiente</option>
                         <option value="Enviado" ${estadoActual === "Enviado" ? "selected" : ""}>Enviado</option>
                         <option value="Entregado" ${estadoActual === "Entregado" ? "selected" : ""}>Entregado</option>
@@ -966,16 +968,19 @@ function renderizarPedidosAdmin() {
     }).join("");
 }
 
-function cambiarEstadoPedido(folio, nuevoEstado) {
-    const pedidos = JSON.parse(localStorage.getItem("patitasElRey_pedidos") || "[]");
-    const pedido = pedidos.find(p => p.folio === folio.replace("#", ""));
-    if (!pedido) return;
+async function cambiarEstadoPedido(idPedido, nuevoEstado) {
+    const { error } = await supabaseClient
+        .from("pedidos")
+        .update({ estado: nuevoEstado })
+        .eq("id", idPedido);
 
-    pedido.estado = nuevoEstado;
-    localStorage.setItem("patitasElRey_pedidos", JSON.stringify(pedidos));
+    if (error) {
+        mostrarToast("No se pudo actualizar el estado.", "error");
+        return;
+    }
 
-    renderizarPedidosAdmin();
-    mostrarToast(`Pedido #${folio} actualizado a "${nuevoEstado}"`, "exito");
+    await renderizarPedidosAdmin();
+    mostrarToast(`Pedido actualizado a "${nuevoEstado}"`, "exito");
 }
 
 /* ============================================
@@ -985,13 +990,12 @@ function cambiarEstadoPedido(folio, nuevoEstado) {
    cambio aquí se refleja automático en todo el sitio.
    ============================================ */
 
-function inicializarProductosAdmin() {
+async function inicializarProductosAdmin() {
     const contenedor = document.getElementById("admin-productos-page");
     if (!contenedor) return; // no estamos en admin-productos.html
 
-    protegerPaginaAdmin();
-    const sesion = obtenerSesion();
-    if (!sesion || sesion.rol !== "admin") return;
+    const sesion = await protegerPaginaAdmin();
+    if (!sesion) return;
 
     renderizarProductosAdmin();
 
@@ -999,11 +1003,11 @@ function inicializarProductosAdmin() {
 }
 document.addEventListener("DOMContentLoaded", inicializarProductosAdmin);
 
-function renderizarProductosAdmin() {
+async function renderizarProductosAdmin() {
     const contenedor = document.getElementById("contenedor-productos-admin");
     if (!contenedor) return;
 
-    const productos = obtenerProductos();
+    const productos = await obtenerProductos();
 
     contenedor.innerHTML = productos.map(p => `
         <div class="col-lg-3 col-md-6">
@@ -1037,8 +1041,9 @@ function abrirModalNuevoProducto() {
     document.querySelectorAll("#form-producto .is-invalid").forEach(c => c.classList.remove("is-invalid"));
 }
 
-function abrirModalEditarProducto(id) {
-    const producto = obtenerProductos().find(p => p.id === id);
+async function abrirModalEditarProducto(id) {
+    const productos = await obtenerProductos();
+    const producto = productos.find(p => p.id === id);
     if (!producto) return;
 
     document.getElementById("modalProductoTitulo").innerHTML = '<i class="bi bi-pencil text-brand"></i> Editar producto';
@@ -1053,7 +1058,7 @@ function abrirModalEditarProducto(id) {
     modal.show();
 }
 
-function guardarProductoDesdeModal() {
+async function guardarProductoDesdeModal() {
     const idEl = document.getElementById("prod-id");
     const nombreEl = document.getElementById("prod-nombre");
     const descripcionEl = document.getElementById("prod-descripcion");
@@ -1087,42 +1092,159 @@ function guardarProductoDesdeModal() {
     }
     alertaError.classList.add("d-none");
 
-    const productos = obtenerProductos();
+  const datosProducto = {
+        nombre: nombreEl.value.trim(),
+        descripcion: descripcionEl.value.trim(),
+        precio: Number(precioEl.value),
+        imagen: imagenEl.value.trim(),
+        destacado: destacadoEl.checked
+    };
 
+    let resultado;
     if (idEl.value) {
         // edición de uno que ya existía
-        const producto = productos.find(p => p.id === Number(idEl.value));
-        producto.nombre = nombreEl.value.trim();
-        producto.descripcion = descripcionEl.value.trim();
-        producto.precio = Number(precioEl.value);
-        producto.imagen = imagenEl.value.trim();
-        producto.destacado = destacadoEl.checked;
+        resultado = await actualizarProducto(Number(idEl.value), datosProducto);
     } else {
         // producto nuevo
-        productos.push({
-            id: Date.now(),
-            nombre: nombreEl.value.trim(),
-            descripcion: descripcionEl.value.trim(),
-            precio: Number(precioEl.value),
-            imagen: imagenEl.value.trim(),
-            destacado: destacadoEl.checked
-        });
+        resultado = await crearProducto(datosProducto);
     }
 
-    guardarProductos(productos);
-    renderizarProductosAdmin();
+    if (!resultado.exito) {
+        alertaError.textContent = "No se pudo guardar el producto. Intenta de nuevo.";
+        alertaError.classList.remove("d-none");
+        return;
+    }
+
+    await renderizarProductosAdmin();
 
     const modalEl = document.getElementById("modalProducto");
     bootstrap.Modal.getInstance(modalEl)?.hide();
     mostrarToast("Producto guardado correctamente", "exito");
 }
 
-function eliminarProductoAdmin(id) {
+async function eliminarProductoAdmin(id) {
     if (!confirm("¿Seguro que quieres eliminar este producto? Esta acción no se puede deshacer.")) return;
 
-    let productos = obtenerProductos();
-    productos = productos.filter(p => p.id !== id);
-    guardarProductos(productos);
-    renderizarProductosAdmin();
+    const resultado = await eliminarProducto(id);
+    if (!resultado.exito) {
+        mostrarToast("No se pudo eliminar el producto.", "error");
+        return;
+    }
+
+    await renderizarProductosAdmin();
     mostrarToast("Producto eliminado", "info");
+}
+
+/* ============================================
+   LOGIN CON GOOGLE (a través de Supabase Auth)
+   Supabase se encarga de todo el intercambio con
+   Google; nosotros solo disparamos el proceso y
+   dejamos que redirija de vuelta a nuestro sitio.
+   ============================================ */
+
+async function iniciarSesionConGoogle() {
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+            redirectTo: window.location.origin + "/perfil.html",
+            queryParams: {
+                access_type: "offline",
+                prompt: "consent"
+            },
+            scopes: "profile email"
+        }
+    });
+
+    if (error) {
+        mostrarToast("No se pudo iniciar sesión con Google.", "error");
+        console.error("Error con Google Sign-In:", error.message);
+    }
+    // si no hay error, el navegador redirige automáticamente a Google,
+    // no hay nada más que hacer aquí
+}
+/**
+ * Cierra sesión sin redirigir - útil cuando queremos rechazar
+ * a alguien silenciosamente y mostrar un mensaje en la misma página.
+ */
+async function cerrarSesionSilenciosa() {
+    await supabaseClient.auth.signOut();
+}
+/* ============================================
+   ADMIN: MENSAJES DE CONTACTO
+   ============================================ */
+
+async function inicializarMensajesAdmin() {
+    const contenedor = document.getElementById("admin-mensajes-page");
+    if (!contenedor) return; // no estamos en admin-mensajes.html
+
+    const sesion = await protegerPaginaAdmin();
+    if (!sesion) return;
+
+    renderizarMensajesAdmin();
+}
+document.addEventListener("DOMContentLoaded", inicializarMensajesAdmin);
+
+async function renderizarMensajesAdmin() {
+    const contenedor = document.getElementById("contenedor-mensajes-admin");
+    const vacio = document.getElementById("mensajes-admin-vacio");
+    if (!contenedor) return;
+
+    const { data: mensajes, error } = await supabaseClient
+        .from("mensajes_contacto")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error("Error al leer mensajes:", error.message);
+        return;
+    }
+
+    if (mensajes.length === 0) {
+        contenedor.innerHTML = "";
+        vacio.classList.remove("d-none");
+        return;
+    }
+    vacio.classList.add("d-none");
+
+    contenedor.innerHTML = mensajes.map(msg => `
+        <div class="mensaje-admin-card ${msg.leido ? "" : "mensaje-no-leido"}">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                <div>
+                    <p class="mb-0 fw-bold">${msg.nombre}</p>
+                    <p class="mb-0 text-muted small">
+                        <i class="bi bi-envelope"></i> ${msg.email} &nbsp;•&nbsp;
+                        <i class="bi bi-telephone"></i> ${msg.telefono} &nbsp;•&nbsp;
+                        ${new Date(msg.created_at).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}
+                    </p>
+                </div>
+                ${!msg.leido ? '<span class="badge-nuevo">Nuevo</span>' : ""}
+            </div>
+            <p class="mb-2 mensaje-texto">${msg.mensaje}</p>
+            <div class="d-flex gap-2">
+                ${!msg.leido ? `<button class="btn btn-sm btn-outline-brand" onclick="marcarMensajeLeido(${msg.id})"><i class="bi bi-check2"></i> Marcar como leído</button>` : ""}
+                <button class="btn btn-sm btn-outline-danger" onclick="eliminarMensajeAdmin(${msg.id})"><i class="bi bi-trash"></i> Eliminar</button>
+            </div>
+        </div>
+    `).join("");
+}
+
+async function marcarMensajeLeido(id) {
+    const { error } = await supabaseClient.from("mensajes_contacto").update({ leido: true }).eq("id", id);
+    if (error) {
+        mostrarToast("No se pudo actualizar el mensaje.", "error");
+        return;
+    }
+    await renderizarMensajesAdmin();
+}
+
+async function eliminarMensajeAdmin(id) {
+    if (!confirm("¿Seguro que quieres eliminar este mensaje?")) return;
+
+    const { error } = await supabaseClient.from("mensajes_contacto").delete().eq("id", id);
+    if (error) {
+        mostrarToast("No se pudo eliminar el mensaje.", "error");
+        return;
+    }
+    await renderizarMensajesAdmin();
+    mostrarToast("Mensaje eliminado", "info");
 }

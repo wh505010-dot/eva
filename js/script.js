@@ -1,62 +1,48 @@
 /* ============================================
    PATITAS EL REY - script.js
-   Data de productos + renderizado + buscador
+   Catálogo de productos usando Supabase
    ============================================ */
 
-// Estos son los productos de fábrica. Solo se usan la primera vez que
-// se abre el sitio en un navegador nuevo, para "sembrar" el catálogo inicial.
-// A partir de ahí, el admin puede editarlos y viven en localStorage.
-const PRODUCTOS_INICIALES = [
-    {
-        id: 1,
-        nombre: "Alitas Deshidratadas Chica (100g)",
-        descripcion: "Bolsa de 100g ideal para perros pequeños o cachorros.",
-        precio: 79,
-        imagen: "img/producto-chica.jpg"
-    },
-    {
-        id: 2,
-        nombre: "Alitas Deshidratadas Mediana (250g)",
-        descripcion: "Bolsa de 250g, la opción más popular para uso diario.",
-        precio: 159,
-        imagen: "img/producto-mediana.jpg",
-        destacado: true
-    },
-    {
-        id: 3,
-        nombre: "Alitas Deshidratadas Grande (500g)",
-        descripcion: "Bolsa de 500g, perfecta para perros grandes o varias mascotas.",
-        precio: 289,
-        imagen: "img/producto-grande.jpg"
-    },
-    {
-        id: 4,
-        nombre: "Combo Mix Premios (3 bolsas chicas)",
-        descripcion: "Set de 3 bolsas chicas para probar y compartir.",
-        precio: 219,
-        imagen: "img/producto-combo.jpg"
+/**
+ * Trae todos los productos desde Supabase, ordenados por id.
+ * Devuelve un arreglo vacío si algo falla (para no tronar el resto del sitio).
+ */
+async function obtenerProductos() {
+    const { data, error } = await supabaseClient
+        .from("productos")
+        .select("*")
+        .order("id", { ascending: true });
+
+    if (error) {
+        console.error("Error al leer productos:", error.message);
+        return [];
     }
-];
-
-const CLAVE_PRODUCTOS = "patitasElRey_productos";
-
-// crea el catálogo en localStorage la primera vez, si todavía no existe
-function sembrarProductosIniciales() {
-    const existentes = localStorage.getItem(CLAVE_PRODUCTOS);
-    if (existentes) return; // ya hay productos guardados, no los pisamos
-    localStorage.setItem(CLAVE_PRODUCTOS, JSON.stringify(PRODUCTOS_INICIALES));
+    return data;
 }
 
-// de aquí en adelante, todo el sitio debe leer productos con esta función
-function obtenerProductos() {
-    const datos = localStorage.getItem(CLAVE_PRODUCTOS);
-    return datos ? JSON.parse(datos) : PRODUCTOS_INICIALES;
+/**
+ * Inserta un producto nuevo en Supabase
+ */
+async function crearProducto(producto) {
+    const { error } = await supabaseClient.from("productos").insert([producto]);
+    return { exito: !error, error };
 }
 
-function guardarProductos(productos) {
-    localStorage.setItem(CLAVE_PRODUCTOS, JSON.stringify(productos));
+/**
+ * Actualiza un producto existente por su id
+ */
+async function actualizarProducto(id, cambios) {
+    const { error } = await supabaseClient.from("productos").update(cambios).eq("id", id);
+    return { exito: !error, error };
 }
 
+/**
+ * Elimina un producto por su id
+ */
+async function eliminarProducto(id) {
+    const { error } = await supabaseClient.from("productos").delete().eq("id", id);
+    return { exito: !error, error };
+}
 /**
  * Genera el HTML de una tarjeta de producto
  */
@@ -97,14 +83,14 @@ function renderizarProductos(contenedorId, listaProductos) {
 /**
  * Lógica del buscador de productos (solo existe en productos.html)
  */
-function inicializarBuscador() {
+function inicializarBuscador(productosCache) {
     const input = document.getElementById("buscador-productos");
     const sinResultados = document.getElementById("sin-resultados");
     if (!input) return; // No estamos en productos.html
 
     input.addEventListener("input", () => {
         const termino = input.value.trim().toLowerCase();
-        const filtrados = obtenerProductos().filter(p =>
+        const filtrados = productosCache.filter(p =>
             p.nombre.toLowerCase().includes(termino)
         );
         renderizarProductos("contenedor-productos", filtrados);
@@ -114,18 +100,18 @@ function inicializarBuscador() {
 /**
  * Al cargar cualquier página, decide qué renderizar según el contenedor presente
  */
-document.addEventListener("DOMContentLoaded", () => {
-    sembrarProductosIniciales();
-
+document.addEventListener("DOMContentLoaded", async () => {
     // Catálogo completo (productos.html)
     if (document.getElementById("contenedor-productos")) {
-        renderizarProductos("contenedor-productos", obtenerProductos());
-        inicializarBuscador();
+        const productos = await obtenerProductos();
+        renderizarProductos("contenedor-productos", productos);
+        inicializarBuscador(productos);
     }
 
     // Destacados en home (index.html) - solo los primeros 4
     if (document.getElementById("contenedor-productos-home")) {
-        renderizarProductos("contenedor-productos-home", obtenerProductos().slice(0, 4));
+        const productos = await obtenerProductos();
+        renderizarProductos("contenedor-productos-home", productos.slice(0, 4));
     }
 });
 
@@ -215,28 +201,41 @@ function inicializarFormularioContacto() {
     campoTelefono.addEventListener("input", validarTelefono);
     campoMensaje.addEventListener("input", validarMensaje);
 
-    // Validación al enviar el formulario
-    form.addEventListener("submit", function (e) {
-        e.preventDefault(); // Nunca se envía a ningún servidor
+ // Validación al enviar el formulario
+    form.addEventListener("submit", async function (e) {
+        e.preventDefault();
 
         const nombreValido = validarNombre();
         const emailValido = validarEmail();
         const telefonoValido = validarTelefono();
         const mensajeValido = validarMensaje();
 
-        if (nombreValido && emailValido && telefonoValido && mensajeValido) {
-            // Simulamos envío exitoso
-            alertaExito.classList.remove("d-none");
-            form.reset();
-            // Quita las clases de validación visual después de resetear
-            [campoNombre, campoEmail, campoTelefono, campoMensaje].forEach(campo => {
-                campo.classList.remove("is-valid", "is-invalid");
-            });
-
-            // Oculta la alerta después de unos segundos
-            setTimeout(() => alertaExito.classList.add("d-none"), 5000);
-            alertaExito.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (!(nombreValido && emailValido && telefonoValido && mensajeValido)) {
+            return;
         }
+
+        const { error } = await supabaseClient.from("mensajes_contacto").insert([{
+            nombre: campoNombre.value.trim(),
+            email: campoEmail.value.trim(),
+            telefono: campoTelefono.value.trim(),
+            mensaje: campoMensaje.value.trim()
+        }]);
+
+        if (error) {
+            console.error("Error al guardar el mensaje:", error.message);
+            alertaExito.classList.add("d-none");
+            mostrarToast("Ocurrió un error al enviar tu mensaje. Intenta de nuevo.", "error");
+            return;
+        }
+
+        alertaExito.classList.remove("d-none");
+        form.reset();
+        [campoNombre, campoEmail, campoTelefono, campoMensaje].forEach(campo => {
+            campo.classList.remove("is-valid", "is-invalid");
+        });
+
+        setTimeout(() => alertaExito.classList.add("d-none"), 5000);
+        alertaExito.scrollIntoView({ behavior: "smooth", block: "center" });
     });
 }
 
