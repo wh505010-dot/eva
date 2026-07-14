@@ -834,3 +834,10 @@ body {
     padding: 4px 10px;
     border-radius: 50px;
 }
+/* respuesta previa guardada en el historial de mensajes */
+.mensaje-respuesta-previa {
+    background-color: #eef5ee;
+    border-left: 3px solid var(--brand-verde);
+    border-radius: 8px;
+    padding: 10px 14px;
+}

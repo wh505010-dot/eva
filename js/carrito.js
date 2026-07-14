@@ -238,7 +238,7 @@ async function finalizarCompra(datosPago = {}) {
         metodoPagoCompleto += ` - Referencia: ${datosPago.referenciaOxxo}`;
     }
 
-    const { error } = await supabaseClient.from("pedidos").insert([{
+  const { error } = await supabaseClient.from("pedidos").insert([{
         folio,
         user_id: sesion.id,
         productos: carrito,
@@ -248,7 +248,9 @@ async function finalizarCompra(datosPago = {}) {
         total,
         estado: "Pendiente",
         direccion: datosPago.direccion || "",
-        metodo_pago: metodoPagoCompleto
+        metodo_pago: metodoPagoCompleto,
+        cliente_nombre: sesion.nombre,
+        cliente_telefono: sesion.telefono || "No registrado"
     }]);
 
     if (error) {

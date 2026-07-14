@@ -73,5 +73,32 @@
     <script src="js/auth.js"></script>
     <script src="js/carrito.js"></script>
     <script src="js/script.js"></script>
+<!-- ===== MODAL RESPONDER MENSAJE ===== -->
+    <div class="modal fade" id="modalResponderMensaje" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-reply-fill text-brand"></i> Responder mensaje</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alerta-responder-error" class="alert alert-danger d-none"></div>
+                    <p class="text-muted small mb-1">Para: <strong id="responder-destinatario"></strong></p>
+                    <div class="mensaje-texto mb-3">
+                        <p class="mb-0 small" id="responder-mensaje-original"></p>
+                    </div>
+                    <label class="form-label">Tu respuesta</label>
+                    <textarea class="form-control" id="responder-texto" rows="5" placeholder="Escribe tu respuesta aquí..."></textarea>
+                    <input type="hidden" id="responder-id-mensaje">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-brand" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-brand" id="btn-enviar-respuesta">
+                        <i class="bi bi-send"></i> Enviar respuesta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

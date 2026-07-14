@@ -924,6 +924,9 @@ async function renderizarPedidosAdmin() {
         .select("*")
         .order("created_at", { ascending: false });
 
+    // guardamos los pedidos en una variable global para poder generar el ticket sin pasar objetos complejos por HTML
+    window.pedidosCache = pedidos || [];
+
     if (error) {
         console.error("Error al leer pedidos:", error.message);
         return;
@@ -955,19 +958,23 @@ async function renderizarPedidosAdmin() {
                     ${pedido.productos.map(prod => `<li>${prod.cantidad}x ${prod.nombre}</li>`).join("")}
                 </ul>
 
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <p class="mb-0 fw-bold text-brand">$${Number(pedido.total).toFixed(2)} MXN</p>
-                    <select class="form-select form-select-sm w-auto" onchange="cambiarEstadoPedido(${pedido.id}, this.value)">
-                        <option value="Pendiente" ${estadoActual === "Pendiente" ? "selected" : ""}>Pendiente</option>
-                        <option value="Enviado" ${estadoActual === "Enviado" ? "selected" : ""}>Enviado</option>
-                        <option value="Entregado" ${estadoActual === "Entregado" ? "selected" : ""}>Entregado</option>
-                    </select>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-brand" onclick="imprimirTicketPedido(${pedido.id})">
+                            <i class="bi bi-printer"></i> Ticket
+                        </button>
+                        <select class="form-select form-select-sm w-auto" onchange="cambiarEstadoPedido(${pedido.id}, this.value)">
+                            <option value="Pendiente" ${estadoActual === "Pendiente" ? "selected" : ""}>Pendiente</option>
+                            <option value="Enviado" ${estadoActual === "Enviado" ? "selected" : ""}>Enviado</option>
+                            <option value="Entregado" ${estadoActual === "Entregado" ? "selected" : ""}>Entregado</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         `;
     }).join("");
 }
-
 async function cambiarEstadoPedido(idPedido, nuevoEstado) {
     const { error } = await supabaseClient
         .from("pedidos")
@@ -1199,6 +1206,8 @@ async function renderizarMensajesAdmin() {
         return;
     }
 
+    window.mensajesCache = mensajes || [];
+
     if (mensajes.length === 0) {
         contenedor.innerHTML = "";
         vacio.classList.remove("d-none");
@@ -1220,7 +1229,16 @@ async function renderizarMensajesAdmin() {
                 ${!msg.leido ? '<span class="badge-nuevo">Nuevo</span>' : ""}
             </div>
             <p class="mb-2 mensaje-texto">${msg.mensaje}</p>
+           ${msg.respuesta ? `
+                <div class="mensaje-respuesta-previa mb-2">
+                    <p class="mb-1 small fw-bold text-brand"><i class="bi bi-reply-fill"></i> Tu respuesta:</p>
+                    <p class="mb-0 small">${msg.respuesta}</p>
+                </div>
+            ` : ""}
             <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-brand" onclick="abrirModalResponder(${msg.id})">
+                    <i class="bi bi-reply-fill"></i> ${msg.respuesta ? "Responder de nuevo" : "Responder"}
+                </button>
                 ${!msg.leido ? `<button class="btn btn-sm btn-outline-brand" onclick="marcarMensajeLeido(${msg.id})"><i class="bi bi-check2"></i> Marcar como leído</button>` : ""}
                 <button class="btn btn-sm btn-outline-danger" onclick="eliminarMensajeAdmin(${msg.id})"><i class="bi bi-trash"></i> Eliminar</button>
             </div>
@@ -1248,3 +1266,203 @@ async function eliminarMensajeAdmin(id) {
     await renderizarMensajesAdmin();
     mostrarToast("Mensaje eliminado", "info");
 }
+/**
+ * Genera y descarga un ticket en PDF con los datos necesarios
+ * para hacer la entrega del pedido (cliente, dirección, productos).
+ */
+function imprimirTicketPedido(idPedido) {
+    const pedido = (window.pedidosCache || []).find(p => p.id === idPedido);
+    if (!pedido) return;
+
+    const { jsPDF } = window.jspdf;
+
+    // ===== Paso 1: calculamos cuántas líneas va a ocupar cada sección variable =====
+    // usamos un doc temporal solo para medir texto (splitTextToSize necesita un doc creado)
+    const docTemporal = new jsPDF({ unit: "mm", format: [80, 150] });
+    const anchoUtil = 72;
+
+    docTemporal.setFontSize(6.5);
+    const lineasDireccion = docTemporal.splitTextToSize(`Envio: ${pedido.direccion || "No especificada"}`, anchoUtil);
+
+    let lineasProductosTotal = 0;
+    pedido.productos.forEach(p => {
+        const lineaProducto = `${p.cantidad}x ${p.nombre}`;
+        lineasProductosTotal += docTemporal.splitTextToSize(lineaProducto, anchoUtil).length;
+    });
+
+    // ===== Paso 2: calculamos la altura total necesaria (en mm) =====
+    // cada bloque suma su altura fija + la variable de sus líneas
+    const alturaEncabezado = 8;          // logo + eslogan
+    const alturaFolioFecha = 8;          // folio + fecha
+    const alturaTituloCliente = 3.5;     // "DATOS DEL CLIENTE"
+    const alturaNombreTel = 6;           // nombre + telefono
+    const alturaDireccion = lineasDireccion.length * 3 + 2;
+    const alturaTituloProductos = 3.5;
+    const alturaProductos = lineasProductosTotal * 3 + 3;
+    const alturaTotal = 4;
+    const alturaPagoEstado = 6;
+    const margenesYlineas = 25;          // espacio de las 4 líneas divisorias + margenes arriba/abajo
+
+    const alturaCalculada =
+        alturaEncabezado + alturaFolioFecha + alturaTituloCliente + alturaNombreTel +
+        alturaDireccion + alturaTituloProductos + alturaProductos + alturaTotal +
+        alturaPagoEstado + margenesYlineas;
+
+    // mínimo 90mm para que nunca se vea demasiado apretado, sin máximo (crece libremente)
+    const alturaFinal = Math.max(alturaCalculada, 90);
+
+    // ===== Paso 3: creamos el PDF real con el tamaño ya calculado =====
+    const doc = new jsPDF({ unit: "mm", format: [80, alturaFinal] });
+
+    let y = 8;
+    const margen = 4;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("PATITAS EL REY", 40, y, { align: "center" });
+    y += 4;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.text("Premios 100% naturales", 40, y, { align: "center" });
+    y += 4;
+
+    doc.setLineWidth(0.1);
+    doc.line(margen, y, 80 - margen, y);
+    y += 4;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text(`Pedido #${pedido.folio}`, margen, y);
+    y += 3.5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.text(new Date(pedido.created_at).toLocaleDateString("es-MX", { year: "numeric", month: "short", day: "numeric" }), margen, y);
+    y += 4;
+
+    doc.line(margen, y, 80 - margen, y);
+    y += 4;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.text("DATOS DEL CLIENTE", margen, y);
+    y += 3.5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.text(`Nombre: ${pedido.cliente_nombre || "No disponible"}`, margen, y);
+    y += 3;
+    doc.text(`Tel: ${pedido.cliente_telefono || "No registrado"}`, margen, y);
+    y += 3.5;
+
+    doc.text(lineasDireccion, margen, y);
+    y += lineasDireccion.length * 3 + 2;
+
+    doc.line(margen, y, 80 - margen, y);
+    y += 4;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.text("PRODUCTOS", margen, y);
+    y += 3.5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    pedido.productos.forEach(p => {
+        const lineaProducto = `${p.cantidad}x ${p.nombre}`;
+        const lineasSplit = doc.splitTextToSize(lineaProducto, anchoUtil);
+        doc.text(lineasSplit, margen, y);
+        y += lineasSplit.length * 3;
+    });
+    y += 3;
+
+    doc.line(margen, y, 80 - margen, y);
+    y += 4;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text(`TOTAL: $${Number(pedido.total).toFixed(2)} MXN`, margen, y);
+    y += 4;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.text(`Pago: ${pedido.metodo_pago || "No especificado"}`, margen, y);
+    y += 3;
+    doc.text(`Estado: ${pedido.estado}`, margen, y);
+
+    doc.save(`ticket-pedido-${pedido.folio}.pdf`);
+}
+/**
+ * Abre el modal para responder un mensaje de contacto específico.
+ */
+function abrirModalResponder(idMensaje) {
+    const msg = (window.mensajesCache || []).find(m => m.id === idMensaje);
+    if (!msg) return;
+
+    document.getElementById("responder-id-mensaje").value = msg.id;
+    document.getElementById("responder-destinatario").textContent = `${msg.nombre} (${msg.email})`;
+    document.getElementById("responder-mensaje-original").textContent = msg.mensaje;
+    document.getElementById("responder-texto").value = msg.respuesta || "";
+    document.getElementById("alerta-responder-error").classList.add("d-none");
+
+    const modal = new bootstrap.Modal(document.getElementById("modalResponderMensaje"));
+    modal.show();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const btnEnviarRespuesta = document.getElementById("btn-enviar-respuesta");
+    if (!btnEnviarRespuesta) return; // no estamos en admin-mensajes.html
+
+    btnEnviarRespuesta.addEventListener("click", async () => {
+        const idMensaje = Number(document.getElementById("responder-id-mensaje").value);
+        const respuesta = document.getElementById("responder-texto").value.trim();
+        const alertaError = document.getElementById("alerta-responder-error");
+
+        if (respuesta.length < 5) {
+            alertaError.textContent = "Escribe una respuesta antes de enviar.";
+            alertaError.classList.remove("d-none");
+            return;
+        }
+
+        const msg = (window.mensajesCache || []).find(m => m.id === idMensaje);
+        if (!msg) return;
+
+        btnEnviarRespuesta.disabled = true;
+        btnEnviarRespuesta.textContent = "Enviando...";
+
+        const { error: errorCorreo } = await supabaseClient.functions.invoke("responder-mensaje", {
+            body: {
+                emailDestino: msg.email,
+                nombreDestino: msg.nombre,
+                mensajeOriginal: msg.mensaje,
+                respuesta
+            }
+        });
+
+        btnEnviarRespuesta.disabled = false;
+        btnEnviarRespuesta.innerHTML = '<i class="bi bi-send"></i> Enviar respuesta';
+
+        if (errorCorreo) {
+            alertaError.textContent = "No se pudo enviar el correo. Intenta de nuevo.";
+            alertaError.classList.remove("d-none");
+            return;
+        }
+
+        // guardamos la respuesta en la base de datos como historial, y marcamos leído
+        const { error: errorGuardar } = await supabaseClient
+            .from("mensajes_contacto")
+            .update({
+                respuesta,
+                respondido_en: new Date().toISOString(),
+                leido: true
+            })
+            .eq("id", idMensaje);
+
+        if (errorGuardar) {
+            console.error("El correo se envió pero no se pudo guardar el historial:", errorGuardar.message);
+        }
+
+        const modalEl = document.getElementById("modalResponderMensaje");
+        bootstrap.Modal.getInstance(modalEl)?.hide();
+
+        await renderizarMensajesAdmin();
+        mostrarToast("Respuesta enviada y guardada correctamente", "exito");
+    });
+});
