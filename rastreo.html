@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rastrea tu pedido | Patitas El Rey</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="index.html">
+                <span class="logo-icono"><i class="bi bi-paw-fill"></i></span>
+                <span class="logo-texto">
+                    Patitas <span class="text-brand">El Rey</span>
+                    <small class="d-block logo-eslogan">Premios 100% naturales</small>
+                </span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-3">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="nosotros.html">Nosotros</a></li>
+                    <li class="nav-item"><a class="nav-link" href="productos.html">Productos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contacto.html">Contacto</a></li>
+                    <li id="nav-auth"></li>
+                    <li class="nav-item">
+                        <a class="btn btn-brand position-relative" href="carrito.html">
+                            <i class="bi bi-cart3"></i> Carrito
+                            <span id="contador-carrito" class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HEADER ===== -->
+    <header class="page-header text-center">
+        <div class="container">
+            <span class="badge bg-brand-light text-brand-dark mb-2">Seguimiento</span>
+            <h1 class="fw-bold">Rastrea tu pedido</h1>
+            <p class="text-muted lead">Ingresa tu número de folio para ver el estatus</p>
+        </div>
+    </header>
+
+    <!-- ===== BUSCADOR DE FOLIO ===== -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-6">
+                    <div class="input-group input-group-lg mb-4">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="bi bi-search text-brand"></i>
+                        </span>
+                        <input type="text" id="input-folio" class="form-control border-start-0" placeholder="Ej. PER-123456">
+                        <button class="btn btn-brand" id="btn-buscar-folio">Buscar</button>
+                    </div>
+
+                    <div id="alerta-rastreo-error" class="alert alert-danger d-none"></div>
+
+                    <!-- ===== RESULTADO DEL RASTREO ===== -->
+                    <div id="resultado-rastreo" class="d-none">
+                        <div class="card border-0 shadow-sm p-4 mb-4">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                <div>
+                                    <p class="text-muted mb-0 small">Pedido</p>
+                                    <h4 class="fw-bold mb-0" id="rastreo-folio">#---</h4>
+                                </div>
+                                <p class="text-muted small mb-0" id="rastreo-fecha"></p>
+                            </div>
+
+                            <!-- Línea de tiempo -->
+                            <div class="timeline-rastreo">
+                                <div class="timeline-paso" id="paso-confirmado">
+                                    <div class="timeline-icono"><i class="bi bi-check-lg"></i></div>
+                                    <div>
+                                        <p class="mb-0 fw-bold">Pedido confirmado</p>
+                                        <p class="mb-0 text-muted small">Recibimos tu pedido correctamente</p>
+                                    </div>
+                                </div>
+                                <div class="timeline-paso" id="paso-preparacion">
+                                    <div class="timeline-icono"><i class="bi bi-box-seam"></i></div>
+                                    <div>
+                                        <p class="mb-0 fw-bold">En preparación</p>
+                                        <p class="mb-0 text-muted small">Estamos alistando tus productos</p>
+                                    </div>
+                                </div>
+                                <div class="timeline-paso" id="paso-enviado">
+                                    <div class="timeline-icono"><i class="bi bi-truck"></i></div>
+                                    <div>
+                                        <p class="mb-0 fw-bold">En camino</p>
+                                        <p class="mb-0 text-muted small">Tu pedido va rumbo a tu domicilio</p>
+                                    </div>
+                                </div>
+                                <div class="timeline-paso" id="paso-entregado">
+                                    <div class="timeline-icono"><i class="bi bi-house-heart"></i></div>
+                                    <div>
+                                        <p class="mb-0 fw-bold">Entregado</p>
+                                        <p class="mb-0 text-muted small">Tu pedido llegó a su destino</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm p-4">
+                            <h6 class="fw-bold mb-3">Detalle del pedido</h6>
+                            <ul class="list-unstyled small text-muted mb-2" id="rastreo-productos"></ul>
+                            <p class="mb-0 text-end fw-bold text-brand" id="rastreo-total"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer-brand pt-5 pb-4">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <h5 class="fw-bold text-white"><i class="bi bi-egg-fried"></i> Patitas El Rey</h5>
+                    <p class="text-white-50">Alitas de pollo deshidratadas 100% naturales para el bienestar de tu mejor amigo.</p>
+                </div>
+                <div class="col-lg-4 col-6">
+                    <h6 class="text-white fw-semibold mb-3">Navegación</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="index.html">Inicio</a></li>
+                        <li><a href="productos.html">Productos</a></li>
+                        <li><a href="contacto.html">Contacto</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4 col-6">
+                    <h6 class="text-white fw-semibold mb-3">Contacto</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><i class="bi bi-envelope"></i> contacto@patitaselrey.com</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="border-secondary mt-4">
+            <p class="text-center text-white-50 mb-0 small">&copy; 2026 Patitas El Rey. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <a href="https://wa.me/520000000000" class="whatsapp-float" target="_blank" aria-label="Contactar por WhatsApp">
+        <i class="bi bi-whatsapp"></i>
+    </a>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/carrito.js"></script>
+    <script src="js/script.js"></script>
+    <script src="js/rastreo.js"></script>
+</body>
+</html>

@@ -102,14 +102,24 @@ function actualizarContadorCarrito() {
 /**
  * Pequeña notificación tipo "toast" cuando agregas un producto
  */
-function mostrarNotificacionCarrito(nombreProducto) {
-    const toastExistente = document.getElementById("toast-carrito");
+/**
+ * Toast genérico reutilizable en cualquier página del sitio.
+ * tipo puede ser "exito", "info" o "error" - cambia el color y el icono.
+ */
+function mostrarToast(mensaje, tipo = "exito") {
+    const toastExistente = document.getElementById("toast-global");
     if (toastExistente) toastExistente.remove();
 
+    const iconos = {
+        exito: "bi-check-circle-fill",
+        info: "bi-info-circle-fill",
+        error: "bi-exclamation-circle-fill"
+    };
+
     const toast = document.createElement("div");
-    toast.id = "toast-carrito";
-    toast.className = "toast-carrito-custom";
-    toast.innerHTML = `<i class="bi bi-check-circle-fill"></i> "${nombreProducto}" agregado al carrito`;
+    toast.id = "toast-global";
+    toast.className = `toast-carrito-custom toast-${tipo}`;
+    toast.innerHTML = `<i class="bi ${iconos[tipo]}"></i> ${mensaje}`;
     document.body.appendChild(toast);
 
     setTimeout(() => toast.classList.add("mostrar"), 10);
@@ -117,6 +127,10 @@ function mostrarNotificacionCarrito(nombreProducto) {
         toast.classList.remove("mostrar");
         setTimeout(() => toast.remove(), 300);
     }, 2500);
+}
+
+function mostrarNotificacionCarrito(nombreProducto) {
+    mostrarToast(`"${nombreProducto}" agregado al carrito`, "exito");
 }
 
 
@@ -250,15 +264,11 @@ async function finalizarCompra(datosPago = {}) {
         direccion: datosPago.direccion || "",
         metodo_pago: metodoPagoCompleto,
         cliente_nombre: sesion.nombre,
-        cliente_telefono: sesion.telefono || "No registrado"
+        cliente_telefono: sesion.telefono || "No registrado",
+        cliente_email: sesion.email
     }]);
 
-    if (error) {
-        console.error("Error al guardar el pedido:", error.message);
-        mostrarToast("Ocurrió un error al registrar tu pedido. Intenta de nuevo.", "error");
-        return;
-    }
-    if (error) {
+   if (error) {
         console.error("Error al guardar el pedido:", error.message);
         mostrarToast("Ocurrió un error al registrar tu pedido. Intenta de nuevo.", "error");
         return;

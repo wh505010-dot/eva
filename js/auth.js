@@ -832,10 +832,15 @@ async function renderizarPedidos() {
                     </div>
                     <span class="badge-pedido">${pedido.estado}</span>
                 </div>
-                <ul class="list-unstyled small text-muted mb-2">
+             <ul class="list-unstyled small text-muted mb-2">
                     ${pedido.productos.map(prod => `<li>${prod.cantidad}x ${prod.nombre}</li>`).join("")}
                 </ul>
-                <p class="mb-0 text-end fw-bold text-brand">$${Number(pedido.total).toFixed(2)} MXN</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="rastreo.html" class="btn btn-sm btn-outline-brand" onclick="localStorage.setItem('folioBusquedaRapida', '${pedido.folio}')">
+                        <i class="bi bi-truck"></i> Rastrear
+                    </a>
+                    <p class="mb-0 fw-bold text-brand">$${Number(pedido.total).toFixed(2)} MXN</p>
+                </div>
             </div>
         `).join("")}
     `;
@@ -951,7 +956,7 @@ async function renderizarPedidosAdmin() {
                             ${new Date(pedido.created_at).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}
                         </p>
                     </div>
-                    <span class="badge-estado badge-estado-${estadoActual.toLowerCase()}">${estadoActual}</span>
+                    <span class="badge-estado badge-estado-${claseEstado(estadoActual)}">${estadoActual}</span>
                 </div>
 
                 <ul class="list-unstyled small text-muted mb-2">
@@ -966,6 +971,7 @@ async function renderizarPedidosAdmin() {
                         </button>
                         <select class="form-select form-select-sm w-auto" onchange="cambiarEstadoPedido(${pedido.id}, this.value)">
                             <option value="Pendiente" ${estadoActual === "Pendiente" ? "selected" : ""}>Pendiente</option>
+                            <option value="En preparación" ${estadoActual === "En preparación" ? "selected" : ""}>En preparación</option>
                             <option value="Enviado" ${estadoActual === "Enviado" ? "selected" : ""}>Enviado</option>
                             <option value="Entregado" ${estadoActual === "Entregado" ? "selected" : ""}>Entregado</option>
                         </select>
@@ -984,6 +990,21 @@ async function cambiarEstadoPedido(idPedido, nuevoEstado) {
     if (error) {
         mostrarToast("No se pudo actualizar el estado.", "error");
         return;
+    }
+
+    // avisamos al cliente por correo solo si el nuevo estado es Enviado o Entregado
+    if (nuevoEstado === "Enviado" || nuevoEstado === "Entregado") {
+        const pedido = (window.pedidosCache || []).find(p => p.id === idPedido);
+        if (pedido && pedido.cliente_email) {
+            await supabaseClient.functions.invoke("notificar-cambio-estado", {
+                body: {
+                    email: pedido.cliente_email,
+                    nombre: pedido.cliente_nombre || "cliente",
+                    folio: pedido.folio,
+                    nuevoEstado
+                }
+            });
+        }
     }
 
     await renderizarPedidosAdmin();
@@ -1466,3 +1487,13 @@ document.addEventListener("DOMContentLoaded", () => {
         mostrarToast("Respuesta enviada y guardada correctamente", "exito");
     });
 });
+/**
+ * Convierte el texto de un estado (ej "En preparación") en una
+ * clase CSS válida (ej "en-preparacion"), sin espacios ni acentos.
+ */
+function claseEstado(estado) {
+    return estado
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita acentos
+        .replace(/\s+/g, "-"); // espacios por guiones
+}
