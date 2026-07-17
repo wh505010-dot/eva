@@ -33,8 +33,21 @@ async function agregarAlCarrito(idProducto) {
     const productos = await obtenerProductos();
     const producto = productos.find(p => p.id === idProducto);
     if (!producto) return;
+
+    const stock = producto.stock ?? 0;
+    if (stock === 0) {
+        mostrarToast(`"${producto.nombre}" está agotado.`, "error");
+        return;
+    }
+
     const carrito = obtenerCarrito();
     const itemExistente = carrito.find(item => item.id === idProducto);
+    const cantidadEnCarrito = itemExistente ? itemExistente.cantidad : 0;
+
+    if (cantidadEnCarrito + 1 > stock) {
+        mostrarToast(`Solo hay ${stock} unidades disponibles de "${producto.nombre}".`, "error");
+        return;
+    }
 
     if (itemExistente) {
         itemExistente.cantidad += 1;
@@ -51,7 +64,6 @@ async function agregarAlCarrito(idProducto) {
     guardarCarrito(carrito);
     mostrarNotificacionCarrito(producto.nombre);
 }
-
 /**
  * Elimina un producto del carrito por completo
  */
@@ -65,10 +77,21 @@ function eliminarDelCarrito(idProducto) {
 /**
  * Cambia la cantidad de un producto (no deja bajar de 1)
  */
-function cambiarCantidad(idProducto, delta) {
+async function cambiarCantidad(idProducto, delta) {
     const carrito = obtenerCarrito();
     const item = carrito.find(item => item.id === idProducto);
     if (!item) return;
+
+    if (delta > 0) {
+        const productos = await obtenerProductos();
+        const producto = productos.find(p => p.id === idProducto);
+        const stock = producto?.stock ?? 0;
+
+        if (item.cantidad + 1 > stock) {
+            mostrarToast(`Solo hay ${stock} unidades disponibles.`, "error");
+            return;
+        }
+    }
 
     item.cantidad += delta;
     if (item.cantidad < 1) item.cantidad = 1;
@@ -225,7 +248,7 @@ function calcularTotales(carrito) {
  */
 
 async function finalizarCompra(datosPago = {}) {
-    
+    console.log("ENTRANDO A FINALIZAR COMPRA", datosPago);
     const carrito = obtenerCarrito();
     if (carrito.length === 0) return;
 
@@ -268,12 +291,21 @@ async function finalizarCompra(datosPago = {}) {
         cliente_email: sesion.email
     }]);
 
-   if (error) {
+ if (error) {
         console.error("Error al guardar el pedido:", error.message);
         mostrarToast("Ocurrió un error al registrar tu pedido. Intenta de nuevo.", "error");
         return;
     }
 
+    // descontamos el stock de cada producto vendido, de forma segura
+    for (const item of carrito) {
+        console.log("Intentando descontar - ID:", item.id, "tipo:", typeof item.id, "cantidad:", item.cantidad);
+        const resultado = await supabaseClient.rpc("descontar_stock", {
+            producto_id: item.id,
+            cantidad_vendida: item.cantidad
+        });
+        console.log("DESCUENTO STOCK:", item.nombre, item.id, item.cantidad, JSON.stringify(resultado));
+    }
     // disparamos el correo de confirmación (no bloqueamos la compra si esto falla)
     enviarCorreoConfirmacion(sesion, folio, carrito, total);
 
@@ -365,10 +397,7 @@ async function abrirCheckout() {
     }
 
    // reiniciamos el formulario de pago a su estado por default
-    document.querySelector('input[name="metodo-pago"][value="Tarjeta"]').checked = true;
-    document.getElementById("checkout-datos-oxxo").classList.add("d-none");
-    document.getElementById("checkout-datos-tarjeta").classList.remove("d-none");
-    document.getElementById("alerta-checkout-error").classList.add("d-none");
+   
     const modal = new bootstrap.Modal(document.getElementById("modalCheckout"));
     modal.show();
 }
@@ -378,7 +407,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll('input[name="metodo-pago"]').forEach(radio => {
         radio.addEventListener("change", () => {
             document.getElementById("checkout-datos-oxxo").classList.toggle("d-none", radio.value !== "Pago en OXXO");
-            document.getElementById("checkout-datos-tarjeta").classList.toggle("d-none", radio.value !== "Tarjeta");
         });
     });
 
@@ -462,65 +490,19 @@ alertaError.classList.add("d-none");
         referenciaOxxo = Array.from({ length: 14 }, () => Math.floor(Math.random() * 10)).join("");
     }
 
-    if (metodoPago === "Tarjeta") {
-        const numero = document.getElementById("checkout-tarjeta-numero").value.replace(/\s/g, "");
-        const nombre = document.getElementById("checkout-tarjeta-nombre").value.trim();
-        const venc = document.getElementById("checkout-tarjeta-venc").value;
-        const cvv = document.getElementById("checkout-tarjeta-cvv").value;
-
-        let valido = true;
-
-        if (numero.length !== 16) {
-            document.getElementById("checkout-tarjeta-numero").classList.add("is-invalid");
-            document.getElementById("error-checkout-tarjeta-numero").textContent = "El número debe tener 16 dígitos.";
-            valido = false;
-        } else if (!validarLuhn(numero)) {
-            document.getElementById("checkout-tarjeta-numero").classList.add("is-invalid");
-            document.getElementById("error-checkout-tarjeta-numero").textContent = "El número de tarjeta no es válido.";
-            valido = false;
-        } else {
-            document.getElementById("checkout-tarjeta-numero").classList.remove("is-invalid");
-        }
-
-        if (!nombre) {
-            document.getElementById("checkout-tarjeta-nombre").classList.add("is-invalid");
-            document.getElementById("error-checkout-tarjeta-nombre").textContent = "Ingresa el nombre en la tarjeta.";
-            valido = false;
-        } else {
-            document.getElementById("checkout-tarjeta-nombre").classList.remove("is-invalid");
-        }
-
-        if (!/^\d{2}\/\d{2}$/.test(venc)) {
-            document.getElementById("checkout-tarjeta-venc").classList.add("is-invalid");
-            document.getElementById("error-checkout-tarjeta-venc").textContent = "Formato MM/AA.";
-            valido = false;
-        } else {
-            document.getElementById("checkout-tarjeta-venc").classList.remove("is-invalid");
-        }
-
-        if (cvv.length < 3) {
-            document.getElementById("checkout-tarjeta-cvv").classList.add("is-invalid");
-            document.getElementById("error-checkout-tarjeta-cvv").textContent = "CVV inválido.";
-            valido = false;
-        } else {
-            document.getElementById("checkout-tarjeta-cvv").classList.remove("is-invalid");
-        }
-
-        if (!valido) {
-            alertaError.textContent = "Revisa los datos de la tarjeta.";
-            alertaError.classList.remove("d-none");
-            return;
-        }
-        datosTarjeta = { ultimos4: numero.slice(-4) };
-    }
-
-// todo validado: cerramos el checkout y completamos la compra
    
-   // todo validado: cerramos el checkout y completamos la compra
+
     const modalCheckout = bootstrap.Modal.getInstance(document.getElementById("modalCheckout"));
     modalCheckout.hide();
 
-    finalizarCompra({ direccion: direccionTexto, metodoPago, tarjeta: datosTarjeta, referenciaOxxo });
+    if (metodoPago === "Tarjeta") {
+        // con tarjeta, ya no guardamos el pedido aquí - lo hace el webhook
+        // de Stripe cuando confirma que el pago se completó de verdad
+        await iniciarPagoConStripe(direccionTexto);
+    } else {
+        // OXXO simulado sigue funcionando exactamente igual que antes
+        finalizarCompra({ direccion: direccionTexto, metodoPago, referenciaOxxo });
+    }
 }
 /**
  * Llama a la Edge Function de Supabase para mandar el correo
@@ -599,4 +581,43 @@ function validarLuhn(numero) {
     }
 
     return suma % 10 === 0;
+}
+/**
+ * Llama a la Edge Function que crea la sesión de pago de Stripe,
+ * y redirige al cliente a la página oficial de Stripe para pagar.
+ */
+async function iniciarPagoConStripe(direccionTexto) {
+    const carrito = obtenerCarrito();
+    const sesion = await obtenerSesion();
+    if (!sesion) return;
+
+    const urlBase = window.location.origin + window.location.pathname.replace("carrito.html", "");
+
+    // versión ligera del carrito solo con lo que necesita el webhook,
+    // para no exceder el límite de 500 caracteres de metadata de Stripe
+    const productosLigero = carrito.map(p => ({
+        id: p.id,
+        nombre: p.nombre,
+        precio: p.precio,
+        cantidad: p.cantidad
+    }));
+
+    const { data, error } = await supabaseClient.functions.invoke("crear-sesion-pago", {
+        body: {
+            productos: carrito,          // este sigue completo, es para armar los line_items de Stripe (lo que ve el cliente)
+            productosMetadata: productosLigero, // este es el que va en el metadata, más corto
+            userId: sesion.id,
+            direccion: direccionTexto,
+            urlExito: urlBase + "pago-exitoso.html",
+            urlCancelado: urlBase + "carrito.html"
+        }
+    });
+    if (error || !data?.success) {
+        mostrarToast("No se pudo iniciar el pago. Intenta de nuevo.", "error");
+        console.error("Error creando sesión de Stripe:", error || data?.error);
+        return;
+    }
+
+    // redirigimos al cliente a la página oficial de Stripe para que pague
+    window.location.href = data.url;
 }

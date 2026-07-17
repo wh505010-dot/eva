@@ -95,10 +95,15 @@
                                 <div class="invalid-feedback" id="error-prod-precio"></div>
                             </div>
                             <div class="col-6">
-                                <label for="prod-imagen" class="form-label">Ruta de imagen</label>
-                                <input type="text" class="form-control" id="prod-imagen" placeholder="img/producto-x.jpg">
-                                <div class="invalid-feedback" id="error-prod-imagen"></div>
+                                <label for="prod-stock" class="form-label">Stock disponible</label>
+                                <input type="number" class="form-control" id="prod-stock" min="0" step="1">
+                                <div class="invalid-feedback" id="error-prod-stock"></div>
                             </div>
+                        </div>
+                        <div class="mb-3 mt-3">
+                            <label for="prod-imagen" class="form-label">Ruta de imagen</label>
+                            <input type="text" class="form-control" id="prod-imagen" placeholder="img/producto-x.jpg">
+                            <div class="invalid-feedback" id="error-prod-imagen"></div>
                         </div>
                         <div class="form-check mt-3">
                             <input type="checkbox" class="form-check-input" id="prod-destacado">

@@ -1044,11 +1044,16 @@ async function renderizarProductosAdmin() {
                 <div class="producto-img-wrap">
                     <img src="${p.imagen}" alt="${p.nombre}">
                 </div>
-                <div class="card-body d-flex flex-column">
+               <div class="card-body d-flex flex-column">
                     <h5 class="card-title">${p.nombre}</h5>
                     <p class="card-text text-muted small flex-grow-1">${p.descripcion}</p>
-                    <p class="producto-precio mb-3">$${p.precio.toFixed(2)} MXN</p>
-                    <div class="d-flex gap-2">
+                    <p class="producto-precio mb-1">$${p.precio.toFixed(2)} MXN</p>
+                    <p class="mb-3">
+                        <span class="badge-stock ${p.stock === 0 ? 'badge-stock-agotado' : p.stock <= 5 ? 'badge-stock-bajo' : 'badge-stock-ok'}">
+                            <i class="bi bi-box-seam"></i> ${p.stock === 0 ? 'Agotado' : `${p.stock} en stock`}
+                        </span>
+                    </p>
+                <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-outline-brand flex-grow-1" onclick="abrirModalEditarProducto(${p.id})">
                             <i class="bi bi-pencil"></i> Editar
                         </button>
@@ -1066,6 +1071,7 @@ function abrirModalNuevoProducto() {
     document.getElementById("modalProductoTitulo").innerHTML = '<i class="bi bi-box-seam text-brand"></i> Nuevo producto';
     document.getElementById("form-producto").reset();
     document.getElementById("prod-id").value = "";
+    document.getElementById("prod-stock").value = 0;
     document.querySelectorAll("#form-producto .is-invalid").forEach(c => c.classList.remove("is-invalid"));
 }
 
@@ -1080,8 +1086,8 @@ async function abrirModalEditarProducto(id) {
     document.getElementById("prod-descripcion").value = producto.descripcion;
     document.getElementById("prod-precio").value = producto.precio;
     document.getElementById("prod-imagen").value = producto.imagen;
+    document.getElementById("prod-stock").value = producto.stock ?? 0;
     document.getElementById("prod-destacado").checked = !!producto.destacado;
-
     const modal = new bootstrap.Modal(document.getElementById("modalProducto"));
     modal.show();
 }
@@ -1120,12 +1126,15 @@ async function guardarProductoDesdeModal() {
     }
     alertaError.classList.add("d-none");
 
-  const datosProducto = {
+  const stockEl = document.getElementById("prod-stock");
+
+    const datosProducto = {
         nombre: nombreEl.value.trim(),
         descripcion: descripcionEl.value.trim(),
         precio: Number(precioEl.value),
         imagen: imagenEl.value.trim(),
-        destacado: destacadoEl.checked
+        destacado: destacadoEl.checked,
+        stock: Number(stockEl.value) || 0
     };
 
     let resultado;

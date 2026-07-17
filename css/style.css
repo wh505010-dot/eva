@@ -903,3 +903,54 @@ body {
 .timeline-paso.timeline-activo p:first-child {
     color: var(--brand-cafe);
 }
+/* badge de stock en el panel admin de productos */
+.badge-stock {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 50px;
+}
+.badge-stock-ok {
+    background-color: #dcf0dc;
+    color: #2d7a3f;
+}
+.badge-stock-bajo {
+    background-color: #fdf1d8;
+    color: #9a6b1e;
+}
+.badge-stock-agotado {
+    background-color: #fbdcdc;
+    color: #b3413a;
+}
+
+/* imagen atenuada cuando el producto está agotado */
+.producto-agotado {
+    opacity: 0.5;
+    filter: grayscale(40%);
+}
+/* ===== Carrito responsivo en móvil ===== */
+@media (max-width: 576px) {
+    .carrito-item {
+        flex-wrap: wrap;
+        gap: 10px !important;
+    }
+    .carrito-item-img {
+        width: 60px;
+        height: 60px;
+    }
+    .carrito-item .flex-grow-1 {
+        flex-basis: calc(100% - 80px); /* deja espacio a la imagen en la primera línea */
+    }
+    .carrito-item .d-flex.align-items-center.gap-2 {
+        order: 3;
+        margin-left: 80px; /* alinea con el texto, no con la imagen */
+    }
+    .carrito-item .text-end {
+        order: 4;
+        margin-left: auto;
+        min-width: auto !important;
+    }
+    .carrito-item .btn-outline-danger {
+        order: 5;
+    }
+}

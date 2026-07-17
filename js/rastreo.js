@@ -37,11 +37,13 @@ async function buscarPedidoPorFolio() {
         return;
     }
 
-    const { data, error } = await supabaseClient
+    const { data: resultados, error } = await supabaseClient
         .from("pedidos")
         .select("*")
         .eq("folio", folio)
-        .single();
+        .order("created_at", { ascending: false });
+
+    const data = resultados && resultados.length > 0 ? resultados[0] : null;
 
     if (error || !data) {
         alertaError.textContent = "No encontramos ningún pedido con ese folio. Revisa que esté bien escrito.";
@@ -97,3 +99,5 @@ function actualizarTimeline(estado) {
         }
     });
 }
+
+

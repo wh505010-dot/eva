@@ -47,18 +47,35 @@ async function eliminarProducto(id) {
  * Genera el HTML de una tarjeta de producto
  */
 function crearTarjetaProducto(producto) {
+    const badgeDestacado = producto.destacado
+        ? `<span class="badge-destacado"><i class="bi bi-star-fill"></i> Más vendido</span>`
+        : "";
+
+    const stock = producto.stock ?? 0;
+    const agotado = stock === 0;
+    const stockBajo = stock > 0 && stock <= 5;
+
+    let avisoStock = "";
+    if (agotado) {
+        avisoStock = `<p class="mb-2 small text-danger fw-semibold"><i class="bi bi-exclamation-circle"></i> Agotado</p>`;
+    } else if (stockBajo) {
+        avisoStock = `<p class="mb-2 small text-warning fw-semibold"><i class="bi bi-exclamation-triangle"></i> ¡Solo quedan ${stock}!</p>`;
+    }
+
     return `
         <div class="col-lg-3 col-md-6" data-nombre="${producto.nombre.toLowerCase()}">
-            <div class="card producto-card">
-        <div class="producto-img-wrap">
-            <img src="${producto.imagen}" alt="${producto.nombre}">
-        </div>
+            <div class="card producto-card position-relative">
+                ${badgeDestacado}
+                <div class="producto-img-wrap ${agotado ? 'producto-agotado' : ''}">
+                    <img src="${producto.imagen}" alt="${producto.nombre}">
+                </div>
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">${producto.nombre}</h5>
                     <p class="card-text text-muted small flex-grow-1">${producto.descripcion}</p>
-                    <p class="producto-precio mb-2">$${producto.precio.toFixed(2)} MXN</p>
-                    <button class="btn btn-brand w-100" onclick="agregarAlCarrito(${producto.id})">
-                        <i class="bi bi-cart-plus"></i> Agregar al carrito
+                    <p class="producto-precio mb-1">$${producto.precio.toFixed(2)} MXN</p>
+                    ${avisoStock}
+                    <button class="btn btn-brand w-100" onclick="agregarAlCarrito(${producto.id})" ${agotado ? "disabled" : ""}>
+                        <i class="bi ${agotado ? 'bi-x-circle' : 'bi-cart-plus'}"></i> ${agotado ? "Agotado" : "Agregar al carrito"}
                     </button>
                 </div>
             </div>
